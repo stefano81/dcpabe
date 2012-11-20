@@ -1,56 +1,55 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 
 
-import it.unisa.dia.gas.jpbc.Element;
-
-
-public class Ciphertext {
-	private Element c0;
-	private List<Element> c1;
-	private List<Element> c2;
-	private List<Element> c3;
+public class Ciphertext implements Serializable {
+	private static final long serialVersionUID = 1L;
+	private byte[] c0;
+	private List<byte[]> c1;
+	private List<byte[]> c2;
+	private List<byte[]> c3;
 	private AccessStructure accessStructure;
 	
 	public Ciphertext() {
-		c1 = new ArrayList<Element>();
-		c2 = new ArrayList<Element>();
-		c3 = new ArrayList<Element>();
+		c1 = new ArrayList<byte[]>();
+		c2 = new ArrayList<byte[]>();
+		c3 = new ArrayList<byte[]>();
 	}
 
-	public Element getC0() {
+	public byte[] getC0() {
 		return c0;
 	}
 
-	public void setC0(Element c0) {
-		this.c0 = c0.getImmutable();
+	public void setC0(byte[] c0) {
+		this.c0 = c0;
 	}
 
-	public Element  getC1(int x) {
+	public byte[]  getC1(int x) {
 		return c1.get(x);
 	}
 
-	public void setC1(Element c1x) {
-		c1.add(c1x.getImmutable());
+	public void setC1(byte[] c1x) {
+		c1.add(c1x);
 	}
 
-	public Element getC2(int x) {
+	public byte[] getC2(int x) {
 		return c2.get(x);
 	}
 
-	public void setC2(Element c2x) {
-		c2.add(c2x.getImmutable());
+	public void setC2(byte[] c2x) {
+		c2.add(c2x);
 	}
 
-	public Element getC3(int x) {
+	public byte[] getC3(int x) {
 		return c3.get(x);
 	}
 
-	public void setC3(Element c3x) {
-		c3.add(c3x.getImmutable());
+	public void setC3(byte[] c3x) {
+		c3.add(c3x);
 	}
 
 	public void setAccessStructure(AccessStructure accessStructure) {

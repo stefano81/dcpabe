@@ -1,21 +1,21 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
-import it.unisa.dia.gas.jpbc.Element;
+import java.io.Serializable;
 
-
-public class PublicKey {
-	private final Element eg1g1ai;
-	private final Element g1yi;
+public class PublicKey implements Serializable {
+	private static final long serialVersionUID = 1L;
+	private final byte[] eg1g1ai;
+	private final byte[] g1yi;
 	
-	public PublicKey(Element eg1g1ai, Element g1yi) {
-		this.eg1g1ai = eg1g1ai.getImmutable();
-		this.g1yi = g1yi.getImmutable();
+	public PublicKey(byte[] eg1g1ai, byte[] g1yi) {
+		this.eg1g1ai = eg1g1ai;
+		this.g1yi = g1yi;
 	}
 
-	public Element getEg1g1ai() {
+	public byte[] getEg1g1ai() {
 		return eg1g1ai;
 	}
 
-	public Element getG1yi() {
+	public byte[] getG1yi() {
 		return g1yi;
 	}
 }

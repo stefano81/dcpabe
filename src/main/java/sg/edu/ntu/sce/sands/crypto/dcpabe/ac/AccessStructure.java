@@ -1,8 +1,5 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe.ac;
-import it.unisa.dia.gas.jpbc.Element;
-import it.unisa.dia.gas.jpbc.Pairing;
-import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
-
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -11,23 +8,26 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Vector;
 
-import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
-
-
-public class AccessStructure {
+public class AccessStructure implements Serializable {
+	public enum MatrixElement {
+		MINUS_ONE,
+		ZERO,
+		ONE
+	}
+	private static final long serialVersionUID = 1L;
 	private Map<Integer, String> rho;
-	private Vector<Vector<Element>> A;
+	private Vector<Vector<MatrixElement>> A;
 	private TreeNode policyTree;
 
 	private int partsIndex;
 
 
 	protected AccessStructure() {
-		A = new Vector<Vector<Element>>();
+		A = new Vector<Vector<MatrixElement>>();
 		rho = new HashMap<Integer, String>();
 	}
 
-	public Vector<Element> getRow(int row) {
+	public Vector<MatrixElement> getRow(int row) {
 		return A.get(row);
 	}
 
@@ -108,23 +108,17 @@ public class AccessStructure {
 		return list;
 	}
 
-	public static AccessStructure buildFromPolicy(String policy, GlobalParameters GP) {
+	public static AccessStructure buildFromPolicy(String policy) {
 		AccessStructure arho = new AccessStructure();
-
-		Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
-
-		Element one = pairing.getZr().newOneElement().getImmutable();
-		Element zero = pairing.getZr().newZeroElement().getImmutable();
-		Element mOne = pairing.getZr().newOneElement().negate().getImmutable();
 
 		arho.generateTree(policy);
 
-		arho.generateMatrix(one, zero, mOne);
+		arho.generateMatrix();
 
 		return arho;
 	}
 
-	private void generateMatrix(Element one, Element zero, Element mOne) {
+	private void generateMatrix() {
 		int c = computeLabels(policyTree);
 
 		Queue<TreeNode> queue = new LinkedList<TreeNode>();
@@ -139,24 +133,24 @@ public class AccessStructure {
 			} else {
 				rho.put(A.size(), node.getName());
 				((Attribute) node).setX(A.size());
-				Vector<Element> Ax = new Vector<Element>(c);
+				Vector<MatrixElement> Ax = new Vector<MatrixElement>(c);
 
 				for (int i = 0; i < node.getLabel().length(); i++) {
 					switch (node.getLabel().charAt(i)) {
 					case '0':
-						Ax.add(zero);
+						Ax.add(MatrixElement.ZERO);
 						break;
 					case '1':
-						Ax.add(one);
+						Ax.add(MatrixElement.ONE);
 						break;
 					case '*':
-						Ax.add(mOne);
+						Ax.add(MatrixElement.MINUS_ONE);
 						break;
 					}
 				}
 
 				while (c > Ax.size())
-					Ax.add(zero);
+					Ax.add(MatrixElement.ZERO);
 				A.add(Ax);
 			}
 		}
@@ -173,18 +167,15 @@ public class AccessStructure {
 		while (!queue.isEmpty()) {
 			TreeNode node = queue.poll();
 
-			if (node instanceof Attribute) {
-//				System.out.printf("attribute: %s %s\n", node.getName(), node.getLabel());
+			if (node instanceof Attribute)
 				continue;
-			}
+			
 			if (node instanceof OrGate) {
-//				System.out.printf("or: label children as myself: %s\n", node.getLabel());
 				((OrGate) node).getLeft().setLabel(node.getLabel());
 				queue.add(((OrGate) node).getLeft());
 				((OrGate) node).getRight().setLabel(node.getLabel());
 				queue.add(((OrGate) node).getRight());
 			} else if (node instanceof AndGate) {
-//				System.out.printf("and: %s label children differently\n", node.getLabel());
 				sb.delete(0, sb.length());
 
 				sb.append(node.getLabel());
@@ -192,7 +183,6 @@ public class AccessStructure {
 				while (c > sb.length())
 					sb.append('0');
 				sb.append('1');
-//				System.out.printf("left: %s\n", sb.toString());
 				((AndGate) node).getLeft().setLabel(sb.toString());
 				queue.add(((AndGate) node).getLeft());
 
@@ -201,7 +191,7 @@ public class AccessStructure {
 				while (c > sb.length())
 					sb.append('0');
 				sb.append('*');
-//				System.out.printf("right: %s\n", sb.toString());
+
 				((AndGate) node).getRight().setLabel(sb.toString());
 				queue.add(((AndGate) node).getRight());
 
@@ -242,16 +232,20 @@ public class AccessStructure {
 
 	public void printMatrix() {
 		for (int x = 0; x < A.size(); x++) {
-			Vector<Element> Ax = A.get(x);
+			Vector<MatrixElement> Ax = A.get(x);
 			System.out.printf("%s: [", rho.get(x));
 			for (int i = 0; i < Ax.size(); i++) {
-				Element e = Ax.get(i);
-				if (e.isOne())
+				switch(Ax.get(i)) {
+				case ONE:
 					System.out.print("  1");
-				else if (e.isZero())
-					System.out.print("  0");
-				else
+					break;
+				case MINUS_ONE:
 					System.out.print(" -1");
+					break;
+				case ZERO:
+					System.out.print("  0");
+					break;
+				}
 			}
 			System.out.println("]");
 		}

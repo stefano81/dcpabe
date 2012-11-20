@@ -1,15 +1,14 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
-import it.unisa.dia.gas.jpbc.Element;
 
 public class Message {
-	public Element m;
+	public byte[] m;
 	
 	public Message() {
 		
 	}
 	
-	public Message(Element m) {
+	public Message(byte[] m) {
 		this.m = m;
 	}
 }

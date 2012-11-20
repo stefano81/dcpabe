@@ -1,6 +1,9 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe.ac;
 
-public abstract class TreeNode {
+import java.io.Serializable;
+
+public abstract class TreeNode implements Serializable {
+	private static final long serialVersionUID = 1L;
 	protected String label;
 	protected int sat;
 	

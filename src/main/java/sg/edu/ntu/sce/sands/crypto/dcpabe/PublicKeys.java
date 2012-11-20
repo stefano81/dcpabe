@@ -4,7 +4,6 @@ import java.util.Map;
 
 
 public class PublicKeys {
-	//private Map<String, Map<String, PublicKey>> publicKeys;
 	private Map<String, PublicKey> publicKeys;
 	
 	public PublicKeys() {

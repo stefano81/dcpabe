@@ -1,21 +1,23 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
-import it.unisa.dia.gas.jpbc.Element;
+
+import java.io.Serializable;
 
 
-public class SecretKey {
-	private final Element ai;
-	private final Element yi;
+public class SecretKey implements Serializable {
+	private static final long serialVersionUID = 1L;
+	private byte[] ai;
+	private byte[] yi;
 	
-	public SecretKey(Element ai, Element yi) {
-		this.ai = ai.getImmutable();
-		this.yi = yi.getImmutable();
+	public SecretKey(byte[] ai, byte[] yi) {
+		this.ai = ai;
+		this.yi = yi;
 	}
 
-	public Element getAi() {
+	public byte[] getAi() {
 		return ai;
 	}
 
-	public Element getYi() {
+	public byte[] getYi() {
 		return yi;
 	}
 }
