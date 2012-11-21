@@ -18,7 +18,7 @@ public class TestDCPABETool {
 	File key1DFile = new File("/tmp/user1_d.key");
 	File key2AFile = new File("/tmp/user2_a.key");
 	String policy = "and a or d and b c";
-
+	
 	@Test
 	public void testDecryptOk() throws Exception {
 		if (!gpFile.exists()) {
@@ -36,6 +36,11 @@ public class TestDCPABETool {
 			enc = true;
 		}
 		if (!encFile.exists() || enc) {
+			if (!apFileP.exists()) {
+				String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
+				
+				DCPABETool.main(args);
+			}
 			String[] args = {"enc", resFile.getAbsolutePath(), policy, encFile.getAbsolutePath(), gpFile.getAbsolutePath(), apFileP.getAbsolutePath()};
 			
 			DCPABETool.main(args);
@@ -72,6 +77,43 @@ public class TestDCPABETool {
 		assertTrue(resFile2.exists());
 		
 		assertEquals("Files differ on size", resFile.length(), resFile2.length());
+	}
+	
+	@Test
+	public void testCheck() throws Exception {
+		if (!gpFile.exists()) {
+			String[] args = {"gsetup", gpFile.getAbsolutePath()};
+			
+			DCPABETool.main(args);
+		}
+		if (!apFileP.exists()) {
+			String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
+			
+			DCPABETool.main(args);
+		}
+		if (!key1AFile.exists()) {
+			String[] args = {"keygen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
+			
+			DCPABETool.main(args);
+		}
+		if (!key1DFile.exists()) {
+			String[] args = {"keygen", "user1", "d", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
+			
+			DCPABETool.main(args);
+		}
+		if (encFile.exists()) {
+			assertTrue(encFile.delete());
+		}
+		
+		assertTrue(apFileS.exists());
+		assertTrue(gpFile.exists());
+		assertTrue(key1AFile.exists());
+		assertTrue(key1DFile.exists());
+		
+		//check <username> <resource> <policy> <gpfile> m <authority 1>...<authority m> n <keyfile 1> ... <keyfile n>
+		String[] args = {"check", "user1", policy, gpFile.getAbsolutePath(), "1", apFileP.getAbsolutePath(), "2", key1AFile.getAbsolutePath(), key1DFile.getAbsolutePath()};
+		
+		DCPABETool.main(args);
 	}
 	
 	@Test

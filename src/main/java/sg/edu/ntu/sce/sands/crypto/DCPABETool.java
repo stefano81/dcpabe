@@ -48,7 +48,8 @@ public class DCPABETool {
 				decrypt(args) ||
 				globalsetup(args) ||
 				keygen(args) ||
-				authhoritysetup(args))
+				authhoritysetup(args) ||
+				check(args))
 			return;
 		else
 			help();
@@ -102,11 +103,9 @@ public class DCPABETool {
 			ois.close();
 
 			ois = new ObjectInputStream(new FileInputStream(args[4]));
-			//ois.readObject(); // flush the ID
 			@SuppressWarnings("unchecked")
 			Map<String, SecretKey> skeys = (Map<String, SecretKey>) ois.readObject();
 			ois.close();
-
 			SecretKey sk = skeys.get(args[2]);
 
 			if (null == sk) {
@@ -155,6 +154,76 @@ public class DCPABETool {
 
 		return false;
 	}
+	
+	// check <username> <policy> <gpfile> m <authorityP 1>...<authorityP m> n <keyfile 1> ... <keyfile n>
+	@SuppressWarnings("unchecked")
+	private static boolean check(String[] args) {
+		if (!args[0].equals("check") || args.length < 8) return false;
+
+		try {
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[3]));
+			GlobalParameters gp = (GlobalParameters) ois.readObject();
+			ois.close();
+			
+			PublicKeys pubKeys = new PublicKeys();
+			
+			int m = Integer.parseInt(args[4]);
+			for (int i = 0; i < m; i++) {
+				ois = new ObjectInputStream(new FileInputStream(args[4+i+1]));
+				pubKeys.subscribeAuthority((Map<String, PublicKey>) ois.readObject());
+				ois.close();
+			}
+			
+			Message om = new Message();
+			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
+			Ciphertext oct = DCPABE.encrypt(om, arho, gp, pubKeys);
+			
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(baos);
+			oos.writeObject(oct);
+			oos.flush();
+			oos.close();
+			
+			ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+			Ciphertext nct = (Ciphertext) ois.readObject();
+
+			arho.printPolicy();
+			
+			PersonalKeys pks = new PersonalKeys(args[1]);
+			
+			int n = Integer.parseInt(args[4+m+1]);
+			for (int i = 0; i < n; i++) {
+				ois = new ObjectInputStream(new FileInputStream(args[4+i+m+2]));
+				PersonalKey pk = (PersonalKey) ois.readObject();
+				System.err.println(pk.getAttribute());
+				pks.addKey(pk);
+				ois.close();
+			}
+			
+			Message dm = DCPABE.decrypt(nct, pks, gp);
+
+			System.err.println(om.m.length);
+			System.err.println(dm.m.length);
+			System.err.println(Arrays.toString(om.m));
+			System.err.println(Arrays.toString(dm.m));
+			
+			return true;
+		} catch (FileNotFoundException e) {
+			System.err.println(e.getMessage());
+		} catch (IOException e) {
+			System.err.println(e.getMessage());
+		} catch (ClassNotFoundException e) {
+			System.err.println(e.getMessage());
+		} catch (DataLengthException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalStateException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return false;
+	}
 
 	// dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
 	private static boolean decrypt(String[] args) {
@@ -173,29 +242,24 @@ public class DCPABETool {
 			for (int i = 5; i < args.length; i++) {
 				ois = new ObjectInputStream(new FileInputStream(args[i]));
 				PersonalKey pk = (PersonalKey) ois.readObject();
+				System.err.println(pk.getAttribute());
 				ois.close();
 				pks.addKey(pk);
 			}
 			
 			Message m = DCPABE.decrypt(ct, pks, gp);
 			
-			System.err.println(m.m.length);
 		    System.err.println(Arrays.toString(m.m));
 			
 			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
 		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
-			//CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange("key".getBytes(), 0, 192/8)), new byte[BLOCKSIZE]);
 		    aes.init(false, ivAndKey);
 		    
-		    byte[] bytes = (byte[]) oIn.readObject();
-		    
-		    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-		    
 		    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]));
-		    cipherData(aes, bais, bos);
+		    cipherData(aes, oIn, bos);
 		    bos.flush();
 		    bos.close();
-		    oIn.close();
+		    ois.close();
 			
 			return true;
 		} catch (FileNotFoundException e) {
@@ -249,27 +313,23 @@ public class DCPABETool {
 			}
 
 			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
+			arho.printPolicy();
+			System.out.println();
 			Message m = new Message();
 			Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
-
+			
 			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[3]));
 			oos.writeObject(ct);
-			oos.flush();
-			
+
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(args[1]));
 
-			System.err.println(m.m.length);
 		    System.err.println(Arrays.toString(m.m));
 			
 			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
 		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
-			//CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange("key".getBytes(), 0, 192/8)), new byte[BLOCKSIZE]);
 		    aes.init(true, ivAndKey);
 		    
-		    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		    
-		    cipherData(aes, bis, baos);
-		    oos.writeObject(baos.toByteArray());
+		    cipherData(aes, bis, oos);
 		    oos.flush();
 		    oos.close();
 		   
@@ -281,14 +341,11 @@ public class DCPABETool {
 		} catch (ClassNotFoundException e) {
 			System.err.println(e.getMessage());
 		} catch (DataLengthException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println(e.getMessage());
 		} catch (IllegalStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println(e.getMessage());
 		} catch (InvalidCipherTextException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.err.println(e.getMessage());
 		}
 		return false;
 	}
