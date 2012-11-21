@@ -2,26 +2,45 @@ package sg.edu.ntu.sce.sands.crypto;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 import java.util.Map;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.ShortBufferException;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.DataLengthException;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.modes.CBCBlockCipher;
+import org.bouncycastle.crypto.modes.PaddedBlockCipher;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
@@ -37,7 +56,13 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.SecretKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 
 public class DCPABETool {
+	private static int BLOCKSIZE = 16;
+
 	public static void main(String[] args) {
+		Security.addProvider(new BouncyCastleProvider());
+		
+		
+		
 		if (encrypt(args) ||
 				decrypt(args) ||
 				globalsetup(args) ||
@@ -57,8 +82,6 @@ public class DCPABETool {
 
 			GlobalParameters gp = (GlobalParameters) ois.readObject();
 			ois.close();
-
-
 
 			String[] subArgs = Arrays.copyOfRange(args, 5, args.length);
 
@@ -154,8 +177,10 @@ public class DCPABETool {
 
 	// dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
 	private static boolean decrypt(String[] args) {
-		if (!args[0].equals("dec") || args.length < 5) return false;
-		Security.addProvider(new BouncyCastleProvider());
+		System.out.println(Arrays.toString(args));
+		System.out.println(args.length);
+		if (!args[0].equals("dec") || args.length < 6) {System.err.println("false");return false;}
+		//Security.addProvider(new BouncyCastleProvider());
 
 		try {
 			ObjectInputStream oIn = new ObjectInputStream(new FileInputStream(args[2]));
@@ -175,53 +200,50 @@ public class DCPABETool {
 			}
 			
 			Message m = DCPABE.decrypt(ct, pks, gp);
+
+			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
+		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
+		    aes.init(true, ivAndKey);
+		    
+		    cipherData(aes, oIn, new BufferedOutputStream(new FileOutputStream(args[3])));
 			
-			Key key = new SecretKeySpec(Arrays.copyOfRange(m.m, 0, 256/8), "AES");
-			Cipher decrypt = Cipher.getInstance("AES/CBC/X9.23Padding", "BC");
-
-			decrypt.init(Cipher.DECRYPT_MODE, key);
-
-			CipherInputStream cIn = new CipherInputStream(oIn, decrypt);
-			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]));
-
-			byte[] buffer = new byte[4096];
-
-			for (int i = cIn.read(buffer); i != -1; i = cIn.read(buffer))
-				bos.write(buffer, 0, i);
-
-			bos.flush();
-			bos.close();
-			cIn.close();
+			return true;
 		} catch (FileNotFoundException e) {
 			System.err.println(e.getMessage());
 		} catch (IOException e) {
 			System.err.println(e.getMessage());
 		} catch (ClassNotFoundException e) {
 			System.err.println(e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
+		} catch (DataLengthException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (NoSuchProviderException e) {
+		} catch (IllegalStateException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (NoSuchPaddingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvalidKeyException e) {
+		} catch (InvalidCipherTextException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		return false;
 	}
+	
+	private static void cipherData(PaddedBufferedBlockCipher cipher, InputStream is, OutputStream os) throws DataLengthException, IllegalStateException, InvalidCipherTextException, IOException  {
+		byte[] inBuff = new byte[cipher.getBlockSize()];
+	    byte[] outBuff = new byte[cipher.getOutputSize(inBuff.length)];
+	    int nbytes;
+	    while (-1 != (nbytes = is.read(inBuff, 0, inBuff.length))) {
+	    	int length1 = cipher.processBytes(inBuff, 0, nbytes, outBuff, 0);
+	    	os.write(outBuff, 0, length1);
+	    }
+	    nbytes = cipher.doFinal(outBuff, 0);
+	    os.write(outBuff, 0, nbytes);
+	}
 
 	// enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>
 	@SuppressWarnings("unchecked")
 	private static boolean encrypt(String[] args) {
 		if (!args[0].equals("enc") || args.length < 6) return false;
-
-		Security.addProvider(new BouncyCastleProvider());
-
 
 		try {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
@@ -240,27 +262,20 @@ public class DCPABETool {
 			Message m = new Message();
 			Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
 
-			Key key = new SecretKeySpec(Arrays.copyOfRange(m.m, 0, 256/8), "AES");
-			Cipher encrypt = Cipher.getInstance("AES/CBC/X9.23Padding", "BC");
-
-			encrypt.init(Cipher.ENCRYPT_MODE, key);
-
 			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[3]));
 			oos.writeObject(ct);
-			oos.flush();
-
-			CipherOutputStream cOut = new CipherOutputStream(oos, encrypt);
+			
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(args[1]));
 
-			byte[] buffer = new byte[4096];
+			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
+		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
+		    aes.init(true, ivAndKey);
+		    
+		    cipherData(aes, bis, oos);
 
-			for (int i = bis.read(buffer); i != -1; i = bis.read(buffer))
-				cOut.write(buffer, 0, i);
-
-			cOut.flush();
-			cOut.close();
-			bis.close();
-
+		    oos.flush();
+		    oos.close();
+		   
 			return true;
 		} catch (FileNotFoundException e) {
 			System.err.println(e.getMessage());
@@ -268,17 +283,14 @@ public class DCPABETool {
 			System.err.println(e.getMessage());
 		} catch (ClassNotFoundException e) {
 			System.err.println(e.getMessage());
-		} catch (NoSuchAlgorithmException e) {
-			System.err.println(e.getMessage());
+		} catch (DataLengthException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (NoSuchProviderException e) {
-			System.err.println(e.getMessage());
+		} catch (IllegalStateException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (NoSuchPaddingException e) {
-			System.err.println(e.getMessage());
-			e.printStackTrace();
-		} catch (InvalidKeyException e) {
-			System.err.println(e.getMessage());
+		} catch (InvalidCipherTextException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return false;
