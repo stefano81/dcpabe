@@ -12,32 +12,15 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.Security;
-import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 import java.util.Map;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.ShortBufferException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
-import org.bouncycastle.crypto.modes.PaddedBlockCipher;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
@@ -60,8 +43,6 @@ public class DCPABETool {
 
 	public static void main(String[] args) {
 		Security.addProvider(new BouncyCastleProvider());
-		
-		
 		
 		if (encrypt(args) ||
 				decrypt(args) ||
@@ -177,10 +158,7 @@ public class DCPABETool {
 
 	// dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
 	private static boolean decrypt(String[] args) {
-		System.out.println(Arrays.toString(args));
-		System.out.println(args.length);
-		if (!args[0].equals("dec") || args.length < 6) {System.err.println("false");return false;}
-		//Security.addProvider(new BouncyCastleProvider());
+		if (!args[0].equals("dec") || args.length < 6) return false;
 
 		try {
 			ObjectInputStream oIn = new ObjectInputStream(new FileInputStream(args[2]));
@@ -200,12 +178,24 @@ public class DCPABETool {
 			}
 			
 			Message m = DCPABE.decrypt(ct, pks, gp);
-
+			
+			System.err.println(m.m.length);
+		    System.err.println(Arrays.toString(m.m));
+			
 			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
 		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
-		    aes.init(true, ivAndKey);
+			//CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange("key".getBytes(), 0, 192/8)), new byte[BLOCKSIZE]);
+		    aes.init(false, ivAndKey);
 		    
-		    cipherData(aes, oIn, new BufferedOutputStream(new FileOutputStream(args[3])));
+		    byte[] bytes = (byte[]) oIn.readObject();
+		    
+		    ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+		    
+		    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]));
+		    cipherData(aes, bais, bos);
+		    bos.flush();
+		    bos.close();
+		    oIn.close();
 			
 			return true;
 		} catch (FileNotFoundException e) {
@@ -264,15 +254,22 @@ public class DCPABETool {
 
 			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[3]));
 			oos.writeObject(ct);
+			oos.flush();
 			
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(args[1]));
 
+			System.err.println(m.m.length);
+		    System.err.println(Arrays.toString(m.m));
+			
 			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
 		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
+			//CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange("key".getBytes(), 0, 192/8)), new byte[BLOCKSIZE]);
 		    aes.init(true, ivAndKey);
 		    
-		    cipherData(aes, bis, oos);
-
+		    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		    
+		    cipherData(aes, bis, baos);
+		    oos.writeObject(baos.toByteArray());
 		    oos.flush();
 		    oos.close();
 		   

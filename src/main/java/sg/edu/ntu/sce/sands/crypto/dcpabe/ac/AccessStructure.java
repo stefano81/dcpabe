@@ -14,6 +14,7 @@ public class AccessStructure implements Serializable {
 		ZERO,
 		ONE
 	}
+	
 	private static final long serialVersionUID = 1L;
 	private Map<Integer, String> rho;
 	private Vector<Vector<MatrixElement>> A;
@@ -262,5 +263,46 @@ public class AccessStructure implements Serializable {
 	public void printPolicy() {
 		 printPolicy(policyTree);
 		 System.out.println();
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((A == null) ? 0 : A.hashCode());
+		result = prime * result + partsIndex;
+		result = prime * result
+				+ ((policyTree == null) ? 0 : policyTree.hashCode());
+		result = prime * result + ((rho == null) ? 0 : rho.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (!(obj instanceof AccessStructure))
+			return false;
+		AccessStructure other = (AccessStructure) obj;
+		if (A == null) {
+			if (other.A != null)
+				return false;
+		} else if (!A.equals(other.A))
+			return false;
+		if (partsIndex != other.partsIndex)
+			return false;
+		if (policyTree == null) {
+			if (other.policyTree != null)
+				return false;
+		} else if (!policyTree.equals(other.policyTree))
+			return false;
+		if (rho == null) {
+			if (other.rho != null)
+				return false;
+		} else if (!rho.equals(other.rho))
+			return false;
+		return true;
 	}
 }

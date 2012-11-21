@@ -17,7 +17,7 @@ public class TestDCPABETool {
 	File key1AFile = new File("/tmp/user1_a.key");
 	File key1DFile = new File("/tmp/user1_d.key");
 	File key2AFile = new File("/tmp/user2_a.key");
-	String policy = "A and or D and B C";
+	String policy = "and a or d and b c";
 
 	@Test
 	public void testDecryptOk() throws Exception {
@@ -26,24 +26,34 @@ public class TestDCPABETool {
 			
 			DCPABETool.main(args);
 		}
-		if (!encFile.exists()) {
+		boolean enc = false;
+		if (!resFile.exists()) {
+			assertTrue(resFile.createNewFile());
+			FileWriter fw = new FileWriter(resFile);
+			fw.append("This is a test file\n");
+			fw.flush();
+			fw.close();
+			enc = true;
+		}
+		if (!encFile.exists() || enc) {
 			String[] args = {"enc", resFile.getAbsolutePath(), policy, encFile.getAbsolutePath(), gpFile.getAbsolutePath(), apFileP.getAbsolutePath()};
 			
 			DCPABETool.main(args);
 		}
 		if (!key1AFile.exists()) {
-			String[] args = {"keygen", "user1", "A", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
+			String[] args = {"keygen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
 			
 			DCPABETool.main(args);
 		}
 		if (!key1DFile.exists()) {
-			String[] args = {"keygen", "user1", "D", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
+			String[] args = {"keygen", "user1", "d", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
 			
 			DCPABETool.main(args);
 		}
 		if (resFile2.exists()) {
 			assertTrue(resFile2.delete());
 		}
+		
 		
 		assertTrue(gpFile.exists());
 		assertTrue(resFile.exists());
@@ -67,12 +77,12 @@ public class TestDCPABETool {
 	@Test
 	public void testEncrypt() throws Exception {
 		if (!gpFile.exists()) {
-			String[] args = {"gsetup", "/tmp/mygp.gp"};
+			String[] args = {"gsetup", gpFile.getAbsolutePath()};
 			
 			DCPABETool.main(args);
 		}
 		if (!apFileP.exists()) {
-			String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "A", "B", "C", "D"};
+			String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
 			
 			DCPABETool.main(args);
 		}
@@ -111,7 +121,7 @@ public class TestDCPABETool {
 			DCPABETool.main(args);
 		}
 		if (!apFileS.exists()) {
-			String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "A", "B", "C", "D"};
+			String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
 			
 			DCPABETool.main(args);
 		}
@@ -123,7 +133,7 @@ public class TestDCPABETool {
 		assertTrue(gpFile.exists());
 		assertFalse(key1AFile.exists());
 		
-		String[] args = {"keygen", "user1", "A", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
+		String[] args = {"keygen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
 		
 		DCPABETool.main(args);
 		
@@ -150,7 +160,7 @@ public class TestDCPABETool {
 		assertFalse(apFileS.exists());
 		assertTrue(gpFile.exists());
 		
-		String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "A", "B", "C", "D"};
+		String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
 		
 		DCPABETool.main(args);
 		
