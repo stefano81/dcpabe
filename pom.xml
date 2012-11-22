@@ -5,9 +5,9 @@
   <version>1.1-SNAPSHOT</version>
   
   <scm>
-      <connection>scm:git:github.com/sbraghin/dcpabe.git</connection>
-      <url>scm:git:github.com/sbraghin/dcpabe.git</url>
-      <developerConnection>scm:git:git@github.com:sbraghin/dcpabe.git</developerConnection>
+      <connection>scm:git:github.com/stefano81/dcpabe.git</connection>
+      <url>scm:git:github.com/stefano81/dcpabe.git</url>
+      <developerConnection>scm:git:git@github.com:stefano81/dcpabe.git</developerConnection>
   </scm>
   
     <build>
