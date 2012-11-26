@@ -44,12 +44,12 @@ public class DCPABETool {
 	public static void main(String[] args) {
 		Security.addProvider(new BouncyCastleProvider());
 		
-		if (encrypt(args) ||
+		if (args.length!=0 && (encrypt(args) ||
 				decrypt(args) ||
 				globalsetup(args) ||
 				keygen(args) ||
 				authhoritysetup(args) ||
-				check(args))
+				check(args)) )
 			return;
 		else
 			help();
@@ -225,7 +225,7 @@ public class DCPABETool {
 		return false;
 	}
 
-	// dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
+	// dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1>...<keyfile n>
 	private static boolean decrypt(String[] args) {
 		if (!args[0].equals("dec") || args.length < 6) return false;
 
@@ -356,6 +356,6 @@ public class DCPABETool {
 		System.out.println("asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>");
 		System.out.println("keygen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>");
 		System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
-		System.out.println("dec <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
+		System.out.println("dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1>...<keyfile n>");
 	}
 }
