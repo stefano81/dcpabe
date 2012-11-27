@@ -35,10 +35,20 @@
   
   <dependencies>
   <dependency>
+  	<groupId>it.unisa.dia.gas</groupId>
+  	<artifactId>jpbc-api</artifactId>
+  	<version>1.2.1</version>
+  </dependency>
+  <dependency>
 	<groupId>junit</groupId>
 	<artifactId>junit</artifactId>
 	<version>4.10</version>
 	<scope>test</scope>
 </dependency>
+	<dependency>
+	<groupId>org.bouncycastle</groupId>
+	<artifactId>bcprov-jdk15</artifactId>
+	<version>1.47</version>
+	</dependency>
   </dependencies>
 </project>
