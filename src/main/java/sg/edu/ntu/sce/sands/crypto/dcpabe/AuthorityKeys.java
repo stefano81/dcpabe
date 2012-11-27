@@ -1,4 +1,8 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
+import it.unisa.dia.gas.jpbc.Element;
+import it.unisa.dia.gas.jpbc.Pairing;
+import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,5 +30,20 @@ public class AuthorityKeys implements Serializable {
 	
 	public Map<String, SecretKey> getSecretKeys() {
 		return secretKeys;
+	}
+	
+	public AuthorityKeys addAttribute(GlobalParameters GP, String attribute){
+		Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
+		
+		Element ai = pairing.getZr().newRandomElement().getImmutable();
+		Element yi = pairing.getZr().newRandomElement().getImmutable();
+		
+		publicKeys.put(attribute, new PublicKey(
+				pairing.pairing(GP.getG1(), GP.getG1()).powZn(ai).toBytes(), 
+				GP.getG1().powZn(yi).toBytes()));
+		
+		secretKeys.put(attribute, new SecretKey(ai.toBytes(), yi.toBytes()));
+		
+		return this;
 	}
 }

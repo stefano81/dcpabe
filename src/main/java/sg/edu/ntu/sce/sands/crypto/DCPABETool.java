@@ -26,6 +26,7 @@ import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import sg.edu.ntu.sce.sands.crypto.TestDCPABEPerformance.TestMode;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
@@ -49,10 +50,38 @@ public class DCPABETool {
 				globalsetup(args) ||
 				keygen(args) ||
 				authhoritysetup(args) ||
-				check(args)) )
+				check(args) ||
+				test(args)) )
 			return;
 		else
 			help();
+	}
+
+	// test <mode: ATTRIBUTE, POLICY_LEN, CLIENT_ATTR_NUM> <minValue> <maxValue> <defAttributeNum> <defPolicyLen> <defClientAttributeNum>
+	private static boolean test(String[] args) {
+		if (!args[0].equals("test") || args.length <= 6) return false;
+		
+		int minValue = Integer.parseInt(args[2]);
+		int maxValue = Integer.parseInt(args[3]);
+		int defAttr = Integer.parseInt(args[4]);
+		int defPol = Integer.parseInt(args[5]);
+		int defClient = Integer.parseInt(args[6]);
+		
+		switch(args[1]){
+		case "ATTRIBUTE":
+			TestDCPABEPerformance.Test(TestMode.ATTRIBUTE, minValue, maxValue, defAttr, defPol, defClient);
+			break;
+		case "POLICY_LEN":
+			TestDCPABEPerformance.Test(TestMode.POLICY_LEN, minValue, maxValue, defAttr, defPol, defClient);
+			break;
+		case "CLIENT_ATTR_NUM":
+			TestDCPABEPerformance.Test(TestMode.CLIENT_ATTR_NUM, minValue, maxValue, defAttr, defPol, defClient);
+			break;
+		default:
+			break;
+		}
+		
+		return true;
 	}
 
 	// asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>
@@ -357,5 +386,6 @@ public class DCPABETool {
 		System.out.println("keygen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>");
 		System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
 		System.out.println("dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1>...<keyfile n>");
+		System.out.println("test <mode: ATTRIBUTE, POLICY_LEN, CLIENT_ATTR_NUM> <minValue> <maxValue> <defAttributeNum> <defPolicyLen> <defClientAttributeNum>");
 	}
 }
