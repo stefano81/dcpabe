@@ -26,11 +26,10 @@ public class TestDCPABEPerformance {
 	static int num_user_tested = 30;
 	static String user_name = "defaultUser";
 
-	static void Test(TestMode mode, int min, int max, int defAttr, int defPol, int defClient){
+	static void Test(GlobalParameters gp, TestMode mode, int min, int max, int defAttr, int defPol, int defClient){
 		
 		//a random 192-bit integer as cleartext
 		BigInteger cleartext = PerformanceUtils.random(BigInteger.valueOf(65536).pow(12));
-		GlobalParameters gp = DCPABE.globalSetup(160);
 		
 		switch (mode){
 		case ATTRIBUTE:
@@ -91,14 +90,15 @@ public class TestDCPABEPerformance {
 		
 		System.gc();
 		
+		PublicKeys pks = new PublicKeys();
+		pks.subscribeAuthority(ak.getPublicKeys());
+		
 		//test encryption
 		do{
 			start=System.nanoTime();
 			for (String i:formula_array){
 				AccessStructure arho = AccessStructure.buildFromPolicy(i);
 				Message m = new Message();
-				PublicKeys pks = new PublicKeys();
-				pks.subscribeAuthority(ak.getPublicKeys());
 				Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
 			}
 			end=System.nanoTime();

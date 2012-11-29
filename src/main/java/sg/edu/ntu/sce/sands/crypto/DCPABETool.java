@@ -57,31 +57,46 @@ public class DCPABETool {
 			help();
 	}
 
-	// test <mode: ATTRIBUTE, POLICY_LEN, CLIENT_ATTR_NUM> <minValue> <maxValue> <defAttributeNum> <defPolicyLen> <defClientAttributeNum>
+	// test <gpfile> <mode: ATTRIBUTE, POLICY_LEN, CLIENT_ATTR_NUM> <minValue> <maxValue> <defAttributeNum> <defPolicyLen> <defClientAttributeNum>
 	private static boolean test(String[] args) {
-		if (!args[0].equals("test") || args.length <= 6) return false;
+		try {
+			
+			if (!args[0].equals("test") || args.length <= 7) return false;
+			
+			ObjectInputStream ois;
+			
+			ois = new ObjectInputStream(new FileInputStream(args[1]));
+			
+			GlobalParameters gp = (GlobalParameters) ois.readObject();
+			ois.close();
+			
+			int minValue = Integer.parseInt(args[3]);
+			int maxValue = Integer.parseInt(args[4]);
+			int defAttr = Integer.parseInt(args[5]);
+			int defPol = Integer.parseInt(args[6]);
+			int defClient = Integer.parseInt(args[7]);
+			
+			switch(args[2]){
+			case "ATTRIBUTE":
+				TestDCPABEPerformance.Test(gp, TestMode.ATTRIBUTE, minValue, maxValue, defAttr, defPol, defClient);
+				break;
+			case "POLICY_LEN":
+				TestDCPABEPerformance.Test(gp, TestMode.POLICY_LEN, minValue, maxValue, defAttr, defPol, defClient);
+				break;
+			case "CLIENT_ATTR_NUM":
+				TestDCPABEPerformance.Test(gp, TestMode.CLIENT_ATTR_NUM, minValue, maxValue, defAttr, defPol, defClient);
+				break;
+			default:
+				break;
+			}
+			
+			return true;
 		
-		int minValue = Integer.parseInt(args[2]);
-		int maxValue = Integer.parseInt(args[3]);
-		int defAttr = Integer.parseInt(args[4]);
-		int defPol = Integer.parseInt(args[5]);
-		int defClient = Integer.parseInt(args[6]);
-		
-		switch(args[1]){
-		case "ATTRIBUTE":
-			TestDCPABEPerformance.Test(TestMode.ATTRIBUTE, minValue, maxValue, defAttr, defPol, defClient);
-			break;
-		case "POLICY_LEN":
-			TestDCPABEPerformance.Test(TestMode.POLICY_LEN, minValue, maxValue, defAttr, defPol, defClient);
-			break;
-		case "CLIENT_ATTR_NUM":
-			TestDCPABEPerformance.Test(TestMode.CLIENT_ATTR_NUM, minValue, maxValue, defAttr, defPol, defClient);
-			break;
-		default:
-			break;
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
 		}
 		
-		return true;
+		return false;
 	}
 
 	// asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>
@@ -235,6 +250,12 @@ public class DCPABETool {
 			System.err.println(dm.m.length);
 			System.err.println(Arrays.toString(om.m));
 			System.err.println(Arrays.toString(dm.m));
+			
+			if (Arrays.equals(om.m, dm.m)){
+				System.out.println("DCPABE works!!!");
+			}else{
+				System.out.println("DCPABE does not work! Something is broken!");
+			}
 			
 			return true;
 		} catch (FileNotFoundException e) {

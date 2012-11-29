@@ -42,9 +42,12 @@ public class DCPABE {
 	}
 
 	public static Ciphertext encrypt(Message message, AccessStructure arho, GlobalParameters GP, PublicKeys pks) {
+		
 		Ciphertext ct = new Ciphertext();
 		
 		Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
+		
+		Element paired_result = pairing.pairing(GP.getG1(), GP.getG1()).getImmutable();
 		
 		Element M = pairing.getGT().newRandomElement().getImmutable();
 		message.m = M.toBytes();
@@ -75,23 +78,53 @@ public class DCPABE {
 			
 			Element rx = pairing.getZr().newRandomElement().getImmutable();
 			
-			Element c1x1 = pairing.pairing(GP.getG1(), GP.getG1()).powZn(lambdax);
+			Element c1x1 = paired_result.powZn(lambdax);
 			Element c1x2 = pairing.getGT().newElement();
 			c1x2.setFromBytes(pks.getPK(arho.rho(x)).getEg1g1ai());
 			c1x2.powZn(rx);
 			
 			ct.setC1(c1x1.mul(c1x2).toBytes());
 			
-			ct.setC2(GP.getG1().powZn(rx).toBytes());
+			Element GP_rx=GP.getG1().getImmutable();
+			Element GP_wx=GP.getG1().getImmutable();
+			
+			if (rx.sub(wx).sign()>0){	//rx>wx
+				GP_wx = GP_wx.powZn(wx).getImmutable();
+				
+				if (wx.sign()==0)
+					GP_rx = GP_rx.powZn(rx).getImmutable();
+				else
+					GP_rx = GP_wx.pow(rx.toBigInteger().divide(wx.toBigInteger()))
+						.mul(GP.getG1().pow(rx.toBigInteger().mod(wx.toBigInteger())))
+						.getImmutable();
+			}else{						//rx<=wx
+				GP_rx = GP_rx.powZn(rx).getImmutable();
+				
+				if (rx.sign()==0)
+					GP_wx = GP_wx.powZn(wx).getImmutable();
+				else
+					GP_wx = GP_rx.pow(wx.toBigInteger().divide(rx.toBigInteger()))
+						.mul(GP.getG1().pow(wx.toBigInteger().mod(rx.toBigInteger())))
+						.getImmutable();
+			}
+			
+			/*GP_rx = GP_rx.powZn(rx).getImmutable();
+			GP_wx = GP_wx.powZn(wx).getImmutable();*/
+			
+			ct.setC2(GP_rx.toBytes());
 			
 			Element c3x = pairing.getG1().newElement();
 			c3x.setFromBytes(pks.getPK(arho.rho(x)).getG1yi());
-			ct.setC3(c3x.powZn(rx).mul(GP.getG1().powZn(wx)).toBytes());
+			ct.setC3(powZn3(c3x, rx).mul(GP_wx).toBytes());
 		}
 		
 		return ct;
 	}
-	
+
+	private static Element powZn3(Element c3x, Element rx) {
+		return c3x.powZn(rx);
+	}
+
 	public static Message decrypt(Ciphertext CT, PersonalKeys pks, GlobalParameters GP) {
 		List<Integer> toUse = CT.getAccessStructure().getIndexesList(pks.getAttributes());
 		
