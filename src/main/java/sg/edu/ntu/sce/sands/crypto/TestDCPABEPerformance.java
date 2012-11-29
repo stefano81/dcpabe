@@ -22,9 +22,9 @@ public class TestDCPABEPerformance {
 		CLIENT_ATTR_NUM
 	}
 	
-	static int num_rounds = 8000;
-	static int num_user_tested = 600;
-	static String user_name = "default user";
+	static int num_rounds = 60;
+	static int num_user_tested = 30;
+	static String user_name = "defaultUser";
 
 	static void Test(TestMode mode, int min, int max, int defAttr, int defPol, int defClient){
 		
@@ -54,9 +54,7 @@ public class TestDCPABEPerformance {
 	@SuppressWarnings("unchecked")
 	private static void subTest(int total_attr_num, int attr_pol_num, int client_attr_num, int pass_num, GlobalParameters gp) {
 		
-		System.out.println("Attribute number="+total_attr_num+", total attributes="+attr_pol_num+", client attribute number="+client_attr_num+", number of run="+pass_num);
-		
-		int internal_pass=3;
+		System.out.println("Total attribute number="+total_attr_num+", attributes in policy="+attr_pol_num+", client attribute number="+client_attr_num+", number of run="+pass_num);
 		
 		AttributeGen attgen=new AttributeGen();
 		Vector<String> formula_group = attgen.gen(total_attr_num, attr_pol_num, pass_num);
@@ -70,22 +68,23 @@ public class TestDCPABEPerformance {
 		int attr_client=Math.min(client_attr_num, total_attr_num);
 		long start, end, oldtime=0, newtime=0;
 		
-		Vector<String> attr_list = (Vector<String>) attgen.backup_attrlist.clone();
+		Vector<String> attr_list;
 		Random rnd = new Random();
 		
 		//authority setup
-		AuthorityKeys ak = DCPABE.authoritySetup("default Authority", 
+		AuthorityKeys ak = DCPABE.authoritySetup("defaultAuthority", 
 				gp, 
-				(String [])attgen.backup_attrlist.toArray(new String[]{}));
+				(String [])attgen.backup_attrlist.toArray(new String[]{""}));
 		
 		//private key generation
 		for (int i=0; i<num_user_tested; i++){
 			attr_list = (Vector<String>) attgen.backup_attrlist.clone();
 			attr_array[i] = new PersonalKeys(user_name);
 			for (int j=0; j<attr_client; j++){
+				String tmp=attr_list.remove(rnd.nextInt(attr_list.size()));
 				attr_array[i].addKey(DCPABE.keyGen(user_name, 
-						attr_list.remove(rnd.nextInt(attr_list.size())), 
-						ak.getSecretKeys().get("default Authority"), 
+						tmp, 
+						ak.getSecretKeys().get(tmp), 
 						gp));
 			}
 		}
@@ -95,23 +94,24 @@ public class TestDCPABEPerformance {
 		//test encryption
 		do{
 			start=System.nanoTime();
-			for (int j=0; j<internal_pass; j++){
-				for (String i:formula_array){
-					AccessStructure arho = AccessStructure.buildFromPolicy(i);
-					Message m = new Message();
-					PublicKeys pks = new PublicKeys();
-					pks.subscribeAuthority(ak.getPublicKeys());
-					Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
-				}
+			for (String i:formula_array){
+				AccessStructure arho = AccessStructure.buildFromPolicy(i);
+				Message m = new Message();
+				PublicKeys pks = new PublicKeys();
+				pks.subscribeAuthority(ak.getPublicKeys());
+				Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
 			}
 			end=System.nanoTime();
 			oldtime=newtime;
 			newtime=end-start;
+			
+			//System.out.println(((double)Math.abs(newtime-oldtime)) / (double)newtime);
+			
 		}while (((double)Math.abs(newtime-oldtime)) / (double)newtime > 0.02);
 	
 		time=(((double)end-(double)start)/1000000000);
 		
-		System.out.println("\tEncryption Time="+PerformanceUtils.formatNumber(time/(double)pass_num/((double)internal_pass), 12)+"s");
+		System.out.println("\tEncryption Time="+PerformanceUtils.formatNumber(time/(double)pass_num, 12)+"s");
 		//System.out.println(PerformanceUtils.formatNumber(time/(double)pass_num/((double)internal_pass), 10)+", ");
 		
 		System.gc();
