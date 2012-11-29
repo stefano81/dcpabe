@@ -4,8 +4,8 @@ import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1CurveGenerator;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure.MatrixElement;
@@ -26,13 +26,13 @@ public class DCPABE {
 		AuthorityKeys authorityKeys = new AuthorityKeys(authorityID);
 		
 		Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
-		
+		Element eg1g1 = pairing.pairing(GP.getG1(), GP.getG1()).getImmutable();
 		for (String attribute : attributes) {
 			Element ai = pairing.getZr().newRandomElement().getImmutable();
 			Element yi = pairing.getZr().newRandomElement().getImmutable();
 			
 			authorityKeys.getPublicKeys().put(attribute, new PublicKey(
-					pairing.pairing(GP.getG1(), GP.getG1()).powZn(ai).toBytes(), 
+					eg1g1.powZn(ai).toBytes(), 
 					GP.getG1().powZn(yi).toBytes()));
 			
 			authorityKeys.getSecretKeys().put(attribute, new SecretKey(ai.toBytes(), yi.toBytes()));
@@ -50,8 +50,9 @@ public class DCPABE {
 		message.m = M.toBytes();
 		
 		Element s = pairing.getZr().newRandomElement().getImmutable();
+		Element eg1g1 = pairing.pairing(GP.getG1(), GP.getG1()).getImmutable();
 		
-		Vector<Element> v = new Vector<Element>(arho.getL());
+		List<Element> v = new ArrayList<Element>(arho.getL());
 		
 		v.add(s);
 		
@@ -59,7 +60,7 @@ public class DCPABE {
 			v.add(pairing.getZr().newRandomElement().getImmutable());
 		}
 		
-		Vector<Element> w = new Vector<Element>();
+		List<Element> w = new ArrayList<Element>();
 		w.add(pairing.getZr().newZeroElement().getImmutable());
 		for (int i = 1; i < arho.getL(); i++) {
 			w.add(pairing.getZr().newRandomElement().getImmutable());
@@ -67,7 +68,7 @@ public class DCPABE {
 		
 		ct.setAccessStructure(arho);
 		
-		ct.setC0(M.mul(pairing.pairing(GP.getG1(), GP.getG1()).powZn(s)).toBytes()); // C_0
+		ct.setC0(M.mul(eg1g1.powZn(s)).toBytes()); // C_0
 		
 		for (int x = 0; x < arho.getN(); x++) {
 			Element lambdax = dotProduct(arho.getRow(x), v, pairing.getZr().newZeroElement(), pairing);
@@ -75,7 +76,7 @@ public class DCPABE {
 			
 			Element rx = pairing.getZr().newRandomElement().getImmutable();
 			
-			Element c1x1 = pairing.pairing(GP.getG1(), GP.getG1()).powZn(lambdax);
+			Element c1x1 = eg1g1.powZn(lambdax);
 			Element c1x2 = pairing.getGT().newElement();
 			c1x2.setFromBytes(pks.getPK(arho.rho(x)).getEg1g1ai());
 			c1x2.powZn(rx);
@@ -142,7 +143,7 @@ public class DCPABE {
 		return new PersonalKey(attribute, GP.getG1().powZn(ai).mul(HGID.powZn(yi)).toBytes());
 	}
 	
-	private static Element dotProduct(Vector<MatrixElement> v1, Vector<Element> v2, Element element, Pairing pairing) {
+	private static Element dotProduct(List<MatrixElement> v1, List<Element> v2, Element element, Pairing pairing) {
 		if (v1.size() != v2.size()) throw new IllegalArgumentException("different length");
 		if (element.isImmutable()) throw new IllegalArgumentException("immutable");
 		
