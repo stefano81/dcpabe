@@ -34,7 +34,7 @@
   </build>
   
   <dependencies>
-  <dependency>
+   <dependency>
   	<groupId>it.unisa.dia.gas</groupId>
   	<artifactId>jpbc-api</artifactId>
   	<version>1.2.1</version>

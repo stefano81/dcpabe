@@ -23,7 +23,7 @@ public class TestDCPABEPerformance {
 	}
 	
 	static int num_rounds = 60;
-	static int num_user_tested = 30;
+	static int num_user_tested = 10;
 	static String user_name = "defaultUser";
 
 	static void Test(GlobalParameters gp, TestMode mode, int min, int max, int defAttr, int defPol, int defClient){
@@ -107,9 +107,9 @@ public class TestDCPABEPerformance {
 			
 			//System.out.println(((double)Math.abs(newtime-oldtime)) / (double)newtime);
 			
-		}while (((double)Math.abs(newtime-oldtime)) / (double)newtime > 0.02);
+		}while (((double)Math.abs(newtime-oldtime)) / (double)newtime > 0.015);
 	
-		time=(((double)end-(double)start)/1000000000);
+		time=(((double)newtime+(double)oldtime)/2.0/1000000000.0);
 		
 		System.out.println("\tEncryption Time="+PerformanceUtils.formatNumber(time/(double)pass_num, 12)+"s");
 		//System.out.println(PerformanceUtils.formatNumber(time/(double)pass_num/((double)internal_pass), 10)+", ");

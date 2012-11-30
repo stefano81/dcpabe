@@ -1,9 +1,12 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 import it.unisa.dia.gas.jpbc.Element;
+import it.unisa.dia.gas.jpbc.ElementPowPreProcessing;
 import it.unisa.dia.gas.jpbc.Pairing;
+import it.unisa.dia.gas.plaf.jpbc.field.base.AbstractElementPowPreProcessing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1CurveGenerator;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Vector;
 
@@ -31,9 +34,17 @@ public class DCPABE {
 			Element ai = pairing.getZr().newRandomElement().getImmutable();
 			Element yi = pairing.getZr().newRandomElement().getImmutable();
 			
+			Element G1_yi= GP.getG1().powZn(yi);
+			
+			Tuple<byte[], Integer[]> tuple = new AbstractElementPowPreProcessing_Fast(
+					G1_yi, AbstractElementPowPreProcessing_Fast.DEFAULT_K).toBytes();
+			
 			authorityKeys.getPublicKeys().put(attribute, new PublicKey(
 					pairing.pairing(GP.getG1(), GP.getG1()).powZn(ai).toBytes(), 
-					GP.getG1().powZn(yi).toBytes()));
+					G1_yi.toBytes(),
+					tuple.x,
+					tuple.y)
+					);
 			
 			authorityKeys.getSecretKeys().put(attribute, new SecretKey(ai.toBytes(), yi.toBytes()));
 		}
@@ -72,6 +83,20 @@ public class DCPABE {
 		
 		ct.setC0(M.mul(pairing.pairing(GP.getG1(), GP.getG1()).powZn(s)).toBytes()); // C_0
 		
+		if (arho.getN()>=4){//determined experimentally, 4 attributes is the cross-over point
+			ct = internal_loop(ct, GP, arho, pks, pairing, paired_result, w, v);
+		}else{
+			ct = internal_loop_nopreprocessing
+					(ct, GP, arho, pks, pairing, paired_result, w, v);
+		}
+		
+		return ct;
+	}
+	
+	private static Ciphertext internal_loop_nopreprocessing(Ciphertext ct, GlobalParameters GP,
+			AccessStructure arho, PublicKeys pks, Pairing pairing,
+			Element paired_result, Vector<Element> w, Vector<Element> v){
+		
 		for (int x = 0; x < arho.getN(); x++) {
 			Element lambdax = dotProduct(arho.getRow(x), v, pairing.getZr().newZeroElement(), pairing);
 			Element wx = dotProduct(arho.getRow(x), w, pairing.getZr().newZeroElement(), pairing);
@@ -84,38 +109,93 @@ public class DCPABE {
 			c1x2.powZn(rx);
 			
 			ct.setC1(c1x1.mul(c1x2).toBytes());
+
+			Element GP_rx=GP.getG1().getImmutable();
+			Element GP_wx=GP.getG1().getImmutable();
+		
+			GP_rx = GP_rx.powZn(rx).getImmutable();
+			GP_wx = GP_wx.powZn(wx).getImmutable();
+			
+			ct.setC2(GP_rx.toBytes());
+			
+			AbstractElementPowPreProcessing_Fast preprocess_c3x = 
+					new AbstractElementPowPreProcessing_Fast(
+							pairing.getG1(),
+							AbstractElementPowPreProcessing.DEFAULT_K,
+							pks.getPK(arho.rho(x)).getG1yi_preprocess(),
+							pks.getPK(arho.rho(x)).getG1yi_preprocess_offset());
+			
+			ct.setC3(preprocess_c3x.powZn(rx).mul(GP_wx).toBytes());
+		}
+		
+		return ct;
+	}
+
+	private static Ciphertext internal_loop(Ciphertext ct, GlobalParameters GP,
+			AccessStructure arho, PublicKeys pks, Pairing pairing,
+			Element paired_result, Vector<Element> w, Vector<Element> v) {
+		
+		ElementPowPreProcessing preprocess = GP.getG1().pow();
+		
+		for (int x = 0; x < arho.getN(); x++) {
+			Element lambdax = dotProduct(arho.getRow(x), v, pairing.getZr().newZeroElement(), pairing);
+			Element wx = dotProduct(arho.getRow(x), w, pairing.getZr().newZeroElement(), pairing);
+			
+			Element rx = pairing.getZr().newRandomElement().getImmutable();
+			
+			Element c1x1 = paired_result.powZn(lambdax);
+			//Element c1x1 = pairing.pairing(GP.getG1(), GP.getG1()).powZn(lambdax);
+			Element c1x2 = pairing.getGT().newElement();
+			c1x2.setFromBytes(pks.getPK(arho.rho(x)).getEg1g1ai());
+			c1x2.powZn(rx);
+			
+			ct.setC1(c1x1.mul(c1x2).toBytes());
+			
+			//if (rx.sign()<0) System.out.println("rx<0!!"); else System.out.println("rx>0");
+			//if (wx.sign()<0) System.out.println("wx<0!!"); else System.out.println("wx>0");
 			
 			Element GP_rx=GP.getG1().getImmutable();
 			Element GP_wx=GP.getG1().getImmutable();
 			
-			if (rx.sub(wx).sign()>0){	//rx>wx
-				GP_wx = GP_wx.powZn(wx).getImmutable();
+			if (rx.toBigInteger().abs().subtract(wx.toBigInteger().abs())
+					.compareTo(BigInteger.ZERO)>0){			//abs(rx)>abs(wx)
+				
+				GP_wx = preprocess.powZn(wx).getImmutable();
 				
 				if (wx.sign()==0)
-					GP_rx = GP_rx.powZn(rx).getImmutable();
+					GP_rx = preprocess.powZn(rx).getImmutable();
 				else
 					GP_rx = GP_wx.pow(rx.toBigInteger().divide(wx.toBigInteger()))
-						.mul(GP.getG1().pow(rx.toBigInteger().mod(wx.toBigInteger())))
+						.mul(preprocess.pow(rx.toBigInteger().mod(wx.toBigInteger())))
 						.getImmutable();
-			}else{						//rx<=wx
-				GP_rx = GP_rx.powZn(rx).getImmutable();
+				
+			}else{											//abs(rx)<=abs(wx)
+				
+				GP_rx = preprocess.powZn(rx).getImmutable();
 				
 				if (rx.sign()==0)
-					GP_wx = GP_wx.powZn(wx).getImmutable();
+					GP_wx = preprocess.powZn(wx).getImmutable();
 				else
 					GP_wx = GP_rx.pow(wx.toBigInteger().divide(rx.toBigInteger()))
-						.mul(GP.getG1().pow(wx.toBigInteger().mod(rx.toBigInteger())))
+						.mul(preprocess.pow(wx.toBigInteger().mod(rx.toBigInteger())))
 						.getImmutable();
 			}
-			
+		
 			/*GP_rx = GP_rx.powZn(rx).getImmutable();
 			GP_wx = GP_wx.powZn(wx).getImmutable();*/
 			
 			ct.setC2(GP_rx.toBytes());
 			
-			Element c3x = pairing.getG1().newElement();
-			c3x.setFromBytes(pks.getPK(arho.rho(x)).getG1yi());
-			ct.setC3(powZn3(c3x, rx).mul(GP_wx).toBytes());
+			/*Element c3x = pairing.getG1().newElement();
+			c3x.setFromBytes(pks.getPK(arho.rho(x)).getG1yi());*/
+			AbstractElementPowPreProcessing_Fast preprocess_c3x = 
+					new AbstractElementPowPreProcessing_Fast(
+							pairing.getG1(),
+							AbstractElementPowPreProcessing.DEFAULT_K,
+							pks.getPK(arho.rho(x)).getG1yi_preprocess(),
+							pks.getPK(arho.rho(x)).getG1yi_preprocess_offset());
+			
+			ct.setC3(preprocess_c3x.powZn(rx).mul(GP_wx).toBytes());
 		}
 		
 		return ct;
