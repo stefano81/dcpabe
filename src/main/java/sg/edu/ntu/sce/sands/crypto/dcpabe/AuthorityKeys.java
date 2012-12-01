@@ -40,14 +40,12 @@ public class AuthorityKeys implements Serializable {
 		
 		Element G1_yi= GP.getG1().powZn(yi);
 		
-		Tuple<byte[], Integer[]> tuple = new AbstractElementPowPreProcessing_Fast(
-				G1_yi, AbstractElementPowPreProcessing_Fast.DEFAULT_K).toBytes();
+		byte[] data = new AbstractElementPowPreProcessing_Fast(G1_yi).toBytes();
 		
 		publicKeys.put(attribute, new PublicKey(
 				pairing.pairing(GP.getG1(), GP.getG1()).powZn(ai).toBytes(), 
 				G1_yi.toBytes(),
-				tuple.x,
-				tuple.y)
+				data)
 				);
 		
 		secretKeys.put(attribute, new SecretKey(ai.toBytes(), yi.toBytes()));

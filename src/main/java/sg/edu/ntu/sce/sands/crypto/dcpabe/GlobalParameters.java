@@ -11,7 +11,10 @@ import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 public class GlobalParameters implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private CurveParameters curveParams;
+	private byte[] eg1g1_preprocess;
 	private Element g1;
+	private byte[] g1_preprocess;
+	
 	public CurveParameters getCurveParams() {
 		return curveParams;
 	}
@@ -24,10 +27,24 @@ public class GlobalParameters implements Serializable {
 	public void setG1(Element g1) {
 		this.g1 = g1;
 	}
+	public byte[] geteg1g1_preprocess(){
+		return eg1g1_preprocess;
+	}
+	public void set_eg1g1_preprocess(byte[] eg1g1_preprocess){
+		this.eg1g1_preprocess = eg1g1_preprocess;
+	}
+	public byte[] getg1_preprocess(){
+		return g1_preprocess;
+	}
+	public void setg1_preprocess(byte[] g1_preprocess){
+		this.g1_preprocess = g1_preprocess;
+	}
 	
 	private void writeObject(java.io.ObjectOutputStream out) throws IOException {
 		out.writeObject(curveParams);
 		out.writeObject(g1.toBytes());
+		out.writeObject(eg1g1_preprocess);
+		out.writeObject(g1_preprocess);
 	}
 	
 	private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
@@ -36,6 +53,8 @@ public class GlobalParameters implements Serializable {
 		g1 = pairing.getG1().newElement();
 		g1.setFromBytes((byte[]) in.readObject());
 		g1 = g1.getImmutable();
+		eg1g1_preprocess = (byte[]) in.readObject();
+		g1_preprocess = (byte[]) in.readObject();
 	}
 	
 	@Override

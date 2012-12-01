@@ -20,23 +20,26 @@ public class AbstractElementPowPreProcessing_Fast {
     protected Element table[][];
     
     protected byte[] data;
-    protected Integer[] offsets;
+    protected int offsets;
 
+    private Element table_flat[];
 
-    public AbstractElementPowPreProcessing_Fast(Element g, int k) {
+    public AbstractElementPowPreProcessing_Fast(Element g) {
         this.field = g.getField();
         this.bits = field.getOrder().bitLength();
-        this.k = k;
+        this.k = DEFAULT_K;
 
         initTable(g);
     }
 
-    public AbstractElementPowPreProcessing_Fast(Field field, int k, byte[] data, Integer[] offsets) {
+    public AbstractElementPowPreProcessing_Fast(Field field, byte[] data) {
         this.field = field;
         this.bits = field.getOrder().bitLength();
-        this.k = k;
+        this.k = DEFAULT_K;
         this.data = data;
-        this.offsets = offsets;
+        this.offsets = field.getLengthInBytes();
+        
+        table_flat = new Element[data.length/offsets];
         
         //initTableFromBytes(source, offset);
     }
@@ -53,21 +56,17 @@ public class AbstractElementPowPreProcessing_Fast {
         return pow(n.toBigInteger());
     }
 
-    public Tuple<byte[], Integer[]> toBytes() {
+    public byte[] toBytes() {
         try {
-        	int cnt=0;
-        	Vector<Integer> offsets = new Vector<Integer>();
             ByteArrayOutputStream out = new ByteArrayOutputStream(
                     field.getLengthInBytes() * table.length * table[0].length
             );
             for (Element[] row : table) {
                 for (Element element : row) {
-                	offsets.add(cnt);
                     out.write(element.toBytes());
-                    cnt+=element.getLengthInBytes();
                 }
             }
-            return new Tuple<byte[], Integer[]>(out.toByteArray(), offsets.toArray(new Integer[]{0}));
+            return out.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -132,10 +131,14 @@ public class AbstractElementPowPreProcessing_Fast {
             }
 
             if (word > 0) {
-            	int offset=offsets[row*lookupSize+word];
-            	Element element = field.newElement();
-            	element.setFromBytes(data, offset);
-                result.mul(element);
+            	int position = row*lookupSize+word;
+            	if (table_flat[position]==null){
+            		int offset=offsets*position;
+            		Element element = field.newElement();
+            		element.setFromBytes(data, offset);
+            		table_flat[position]=element;
+            	}
+                result.mul(table_flat[position]);
             }
         }
 
