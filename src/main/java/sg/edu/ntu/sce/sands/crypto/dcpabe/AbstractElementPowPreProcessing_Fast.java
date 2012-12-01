@@ -132,9 +132,6 @@ public class AbstractElementPowPreProcessing_Fast {
             }
 
             if (word > 0) {
-            	field.newElement().setFromBytes(data,offsets[0]);
-            	field.newElement().setFromBytes(data,offsets[1]);
-            	
             	int offset=offsets[row*lookupSize+word];
             	Element element = field.newElement();
             	element.setFromBytes(data, offset);
