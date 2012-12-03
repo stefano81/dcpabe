@@ -145,7 +145,10 @@ public class DCPABE {
 	public static Message decrypt(Ciphertext CT, PersonalKeys pks, GlobalParameters GP) {
 		List<Integer> toUse = CT.getAccessStructure().getIndexesList(pks.getAttributes());
 		
-		if (null == toUse || toUse.isEmpty()) throw new IllegalArgumentException("not satisfying");
+		if (null == toUse || toUse.isEmpty()) {
+			//throw new IllegalArgumentException("not satisfying");
+			return null;
+		}
 		
 		Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
 		

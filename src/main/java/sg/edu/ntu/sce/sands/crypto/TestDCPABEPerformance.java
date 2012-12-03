@@ -22,8 +22,8 @@ public class TestDCPABEPerformance {
 		CLIENT_ATTR_NUM
 	}
 	
-	static int num_rounds = 60;
-	static int num_user_tested = 10;
+	static int num_rounds = 50;
+	static int num_user_tested = 20;
 	static String user_name = "defaultUser";
 
 	static void Test(GlobalParameters gp, TestMode mode, int min, int max, int defAttr, int defPol, int defClient){
@@ -93,25 +93,57 @@ public class TestDCPABEPerformance {
 		PublicKeys pks = new PublicKeys();
 		pks.subscribeAuthority(ak.getPublicKeys());
 		
+		Ciphertext[] ct = new Ciphertext[pass_num];
+		
 		//test encryption
 		do{
 			start=System.nanoTime();
+			int cnt=0;
 			for (String i:formula_array){
 				AccessStructure arho = AccessStructure.buildFromPolicy(i);
 				Message m = new Message();
-				Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
+				ct[cnt] = DCPABE.encrypt(m, arho, gp, pks);
+				cnt++;
 			}
 			end=System.nanoTime();
 			oldtime=newtime;
 			newtime=end-start;
-			
-			//System.out.println(((double)Math.abs(newtime-oldtime)) / (double)newtime);
 			
 		}while (((double)Math.abs(newtime-oldtime)) / (double)newtime > 0.015);
 	
 		time=(((double)newtime+(double)oldtime)/2.0/1000000000.0);
 		
 		System.out.println("\tEncryption Time="+PerformanceUtils.formatNumber(time/(double)pass_num, 12)+"s");
+		System.gc();
+		oldtime=0;
+		newtime=0;
+		
+		int failed;
+		//test decryption
+		do{
+			failed=0;
+			start=System.nanoTime();
+			for (int i=0; i<pass_num; i++){
+				for (int j=0; j<num_user_tested; j++){
+					if (DCPABE.decrypt(ct[i], attr_array[j], gp)==null){
+						failed++;
+					}
+				}
+			}
+			end=System.nanoTime();
+			oldtime=newtime;
+			newtime=end-start;
+			
+		}while (((double)Math.abs(newtime-oldtime)) / (double)newtime > 0.015);
+	
+		time=(((double)newtime+(double)oldtime)/2.0/1000000000.0);
+		
+		System.out.println("\tDecryption Time="
+		+PerformanceUtils.formatNumber(time/(double)pass_num/(double)num_user_tested, 12)
+		+"s, percentage fail="
+		+(double)failed/(double)num_user_tested/(double)pass_num*100.0
+		+"%");
+		
 		//System.out.println(PerformanceUtils.formatNumber(time/(double)pass_num/((double)internal_pass), 10)+", ");
 		
 		System.gc();
