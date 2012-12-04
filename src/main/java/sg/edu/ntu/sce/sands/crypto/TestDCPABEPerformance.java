@@ -1,6 +1,8 @@
 package sg.edu.ntu.sce.sands.crypto;
 
 import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Vector;
 import sg.edu.ntu.sce.sands.crypto.PerformanceUtils;
@@ -22,14 +24,22 @@ public class TestDCPABEPerformance {
 		CLIENT_ATTR_NUM
 	}
 	
-	static int num_rounds = 50;
-	static int num_user_tested = 20;
+	static int num_rounds = 60;
+	static int num_user_tested = 60;
 	static String user_name = "defaultUser";
 
 	static void Test(GlobalParameters gp, TestMode mode, int min, int max, int defAttr, int defPol, int defClient){
 		
 		//a random 192-bit integer as cleartext
 		BigInteger cleartext = PerformanceUtils.random(BigInteger.valueOf(65536).pow(12));
+		System.gc();
+		
+		System.out.println("Assessing performance for "+PerformanceUtils.TEST_PERIOD_MILLIS/1000+" seconds...");
+		double performance_index=PerformanceUtils.getPerformanceIndex(gp);
+		System.out.println("Performance Index: " + performance_index);
+		
+		double factor = performance_index/PerformanceUtils.DEFAULT_PERFORMANCE;
+		System.out.println("Factor: " + PerformanceUtils.formatNumber(factor*100.0, 2) + "%");
 		
 		switch (mode){
 		case ATTRIBUTE:
@@ -54,6 +64,7 @@ public class TestDCPABEPerformance {
 	private static void subTest(int total_attr_num, int attr_pol_num, int client_attr_num, int pass_num, GlobalParameters gp) {
 		
 		System.out.println("Total attribute number="+total_attr_num+", attributes in policy="+attr_pol_num+", client attribute number="+client_attr_num+", number of run="+pass_num);
+		//System.out.print(attr_pol_num+", ");
 		
 		AttributeGen attgen=new AttributeGen();
 		Vector<String> formula_group = attgen.gen(total_attr_num, attr_pol_num, pass_num);
@@ -62,13 +73,13 @@ public class TestDCPABEPerformance {
 		
 		double time;
 		
-		int counter=0;
 		PersonalKeys [] attr_array = new PersonalKeys [num_user_tested];	//each element contains all attributes the user has
 		int attr_client=Math.min(client_attr_num, total_attr_num);
 		long start, end, oldtime=0, newtime=0;
 		
 		Vector<String> attr_list;
-		Random rnd = new Random();
+		SecureRandom rnd = new SecureRandom();
+		rnd.setSeed(new Random().nextLong());
 		
 		//authority setup
 		AuthorityKeys ak = DCPABE.authoritySetup("defaultAuthority", 
@@ -94,6 +105,7 @@ public class TestDCPABEPerformance {
 		pks.subscribeAuthority(ak.getPublicKeys());
 		
 		Ciphertext[] ct = new Ciphertext[pass_num];
+		Message[] msg = new Message[pass_num];
 		
 		//test encryption
 		do{
@@ -103,6 +115,7 @@ public class TestDCPABEPerformance {
 				AccessStructure arho = AccessStructure.buildFromPolicy(i);
 				Message m = new Message();
 				ct[cnt] = DCPABE.encrypt(m, arho, gp, pks);
+				msg[cnt] = m;
 				cnt++;
 			}
 			end=System.nanoTime();
@@ -118,15 +131,18 @@ public class TestDCPABEPerformance {
 		oldtime=0;
 		newtime=0;
 		
-		int failed;
+		int failed=0;
 		//test decryption
 		do{
 			failed=0;
 			start=System.nanoTime();
 			for (int i=0; i<pass_num; i++){
 				for (int j=0; j<num_user_tested; j++){
-					if (DCPABE.decrypt(ct[i], attr_array[j], gp)==null){
+					Message message=DCPABE.decrypt(ct[i], attr_array[j], gp);
+					if (message==null){
 						failed++;
+					}else if (!Arrays.equals(message.m, msg[i].m)){
+							throw new IllegalArgumentException("wrong!!");
 					}
 				}
 			}
@@ -143,6 +159,8 @@ public class TestDCPABEPerformance {
 		+"s, percentage fail="
 		+(double)failed/(double)num_user_tested/(double)pass_num*100.0
 		+"%");
+		
+		//System.out.println(use1+", "+use2);
 		
 		//System.out.println(PerformanceUtils.formatNumber(time/(double)pass_num/((double)internal_pass), 10)+", ");
 		

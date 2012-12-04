@@ -1,12 +1,9 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 import it.unisa.dia.gas.jpbc.Element;
-import it.unisa.dia.gas.jpbc.ElementPowPreProcessing;
 import it.unisa.dia.gas.jpbc.Pairing;
-import it.unisa.dia.gas.plaf.jpbc.field.base.AbstractElementPowPreProcessing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1CurveGenerator;
 
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Vector;
 
@@ -143,7 +140,8 @@ public class DCPABE {
 	}
 
 	public static Message decrypt(Ciphertext CT, PersonalKeys pks, GlobalParameters GP) {
-		List<Integer> toUse = CT.getAccessStructure().getIndexesList(pks.getAttributes());
+		//List<Integer> toUse = CT.getAccessStructure().getIndexesList(pks.getAttributes());
+		List<Integer> toUse = CT.getAccessStructure().getIndexesList_Breadth(pks.getAttributes());
 		
 		if (null == toUse || toUse.isEmpty()) {
 			//throw new IllegalArgumentException("not satisfying");

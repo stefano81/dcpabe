@@ -6,15 +6,25 @@ public abstract class TreeNode implements Serializable {
 	private static final long serialVersionUID = 1L;
 	protected String label;
 	protected int sat;
+	protected InternalNode parent;
 	
 	abstract String getName();
 	
 	public int getSat() {
 		return sat;
 	}
-	
+
 	public void setSat(int i) {
 		this.sat = i;
+	}
+	
+	public InternalNode getParent() {
+		return parent;
+	}
+
+	public TreeNode setParent(TreeNode i) {
+		this.parent = (InternalNode) i;
+		return this;
 	}
 	
 	public String getLabel() {
@@ -23,6 +33,17 @@ public abstract class TreeNode implements Serializable {
 	
 	public void setLabel(String label) {
 		this.label = label;
+	}
+	
+	protected int index = 0;
+	
+	public int getIndex(){
+		return index;
+	}
+	
+	public TreeNode setIndex(int in){
+		index=in;
+		return this;
 	}
 
 	@Override

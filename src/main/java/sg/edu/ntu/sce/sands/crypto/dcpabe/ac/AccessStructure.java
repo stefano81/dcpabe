@@ -1,5 +1,6 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe.ac;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -215,9 +216,10 @@ public class AccessStructure implements Serializable {
 		} else {
 			node = new Attribute(policyParts[partsIndex]);
 		}
+		
 		if (node instanceof InternalNode) {
-			((InternalNode) node).setLeft(generateTree(policyParts));
-			((InternalNode) node).setRight(generateTree(policyParts));
+			((InternalNode) node).setLeft(generateTree(policyParts).setParent(node));
+			((InternalNode) node).setRight(generateTree(policyParts).setParent(node));
 		}
 
 		return node;
@@ -304,5 +306,151 @@ public class AccessStructure implements Serializable {
 		} else if (!rho.equals(other.rho))
 			return false;
 		return true;
+	}
+
+	public List<Integer> getIndexesList_Breadth(Collection<String> pKeys) {
+		
+		List<Integer> selrows = null;
+
+		LinkedList<TreeNode> queue_attributes = new LinkedList<TreeNode>();
+		LinkedList<TreeNode> queue2 = new LinkedList<TreeNode>();
+		
+		int node_count=1;
+		queue2.add(policyTree);
+		while (!queue2.isEmpty()) {
+			TreeNode t = queue2.poll();
+			t.setIndex(node_count);
+			node_count++;
+
+			if (t instanceof Attribute) {
+				if (pKeys.contains(t.getName()))
+					queue_attributes.offer(t);
+			} else	if (t instanceof InternalNode) {
+				queue2.add(((InternalNode) t).getLeft());
+				queue2.add(((InternalNode) t).getRight());
+			}
+		}
+		
+		boolean [] satisfied_left=new boolean[node_count+1];
+		boolean [] satisfied_right=new boolean[node_count+1];
+		int [] full_satisfied=new int[node_count+1];	//if satisfied, returns satisfied by who (tree index)
+		int [] satisfied_num =new int[node_count+1];	//if satisfied, by how many attributes
+		int [] satisfied_num_left =new int[node_count+1];
+		int [] satisfied_num_right =new int[node_count+1];
+		
+		Arrays.fill(satisfied_left, false);
+		Arrays.fill(satisfied_right, false);
+		Arrays.fill(full_satisfied, -1);
+		Arrays.fill(satisfied_num, node_count+1);
+		Arrays.fill(satisfied_num_left, node_count+1);
+		Arrays.fill(satisfied_num_right, node_count+1);
+		
+		for (TreeNode i : queue_attributes){
+			satisfied_num[i.getIndex()]=1;
+		}
+		
+		boolean reached=false;
+		while (!queue_attributes.isEmpty()){
+			TreeNode node=queue_attributes.remove();
+			if (node==policyTree){	//reached root
+				reached=true;
+			}
+			TreeNode parent=node.getParent();
+			if (parent instanceof AndGate){
+				if (full_satisfied[parent.getIndex()]==-1){		//we reached first
+					
+					if (node==((AndGate) parent).getLeft()){
+						satisfied_num_left[parent.getIndex()] = satisfied_num[node.getIndex()];
+					}else if (node==((AndGate) parent).getRight()){
+						satisfied_num_right[parent.getIndex()] = satisfied_num[node.getIndex()];
+					}else new IllegalArgumentException("Not supposed to be here!");
+					
+					if (!satisfied_left[parent.getIndex()] && node==((AndGate) parent).getLeft()){
+						satisfied_left[parent.getIndex()]=true;
+					}
+					
+					if (!satisfied_right[parent.getIndex()] && node==((AndGate) parent).getRight()){
+						satisfied_right[parent.getIndex()]=true;
+					}
+					
+					if (satisfied_right[parent.getIndex()] && satisfied_left[parent.getIndex()]){
+						full_satisfied[parent.getIndex()]=node.getIndex();
+						queue_attributes.offer(parent);
+						
+						satisfied_num[parent.getIndex()] = 
+								satisfied_num_left[parent.getIndex()] +
+								satisfied_num_right[parent.getIndex()];
+					}
+					
+				}else{	//will accept if uses less attributes
+					if (node==((AndGate) parent).getLeft()){
+						if (satisfied_num[node.getIndex()]<satisfied_num_left[parent.getIndex()]){
+							satisfied_num_left[parent.getIndex()] = satisfied_num[node.getIndex()];
+							
+							satisfied_num[parent.getIndex()] = 
+									satisfied_num_left[parent.getIndex()] +
+									satisfied_num_right[parent.getIndex()];
+							
+							full_satisfied[parent.getIndex()]=node.getIndex();
+							queue_attributes.offer(parent);
+						}
+					}else if (node==((AndGate) parent).getRight()){
+						if (satisfied_num[node.getIndex()]<satisfied_num_right[parent.getIndex()]){
+							satisfied_num_right[parent.getIndex()] = satisfied_num[node.getIndex()];
+							
+							satisfied_num[parent.getIndex()] = 
+									satisfied_num_left[parent.getIndex()] +
+									satisfied_num_right[parent.getIndex()];
+							
+							full_satisfied[parent.getIndex()]=node.getIndex();
+							queue_attributes.offer(parent);
+						}
+					}else new IllegalArgumentException("Not supposed to be here!");
+				}
+			}else{
+				if (parent instanceof OrGate){
+					if (satisfied_num[node.getIndex()]<satisfied_num[parent.getIndex()]){
+						full_satisfied[parent.getIndex()]=node.getIndex();
+						satisfied_num[parent.getIndex()] = satisfied_num[node.getIndex()];
+						queue_attributes.offer(parent);
+					}
+				}
+			}
+		}
+		
+		if (reached){
+			selrows=new Vector<Integer>();
+			queue_attributes.clear();
+			
+			queue_attributes.offer(policyTree);
+			while (!queue_attributes.isEmpty()){
+				TreeNode node=queue_attributes.remove();
+				
+				if (node instanceof Attribute){
+					selrows.add(((Attribute) node).getX());
+					continue;
+				}
+				
+				if (node instanceof AndGate){
+					queue_attributes.offer(((InternalNode)node).getLeft());
+					queue_attributes.offer(((InternalNode)node).getRight());
+					continue;
+				}
+
+				if (node instanceof OrGate){
+					int index=full_satisfied[node.getIndex()];
+					if (((OrGate)node).getLeft().getIndex()==index)
+						queue_attributes.offer(((OrGate)node).getLeft());
+					else
+						queue_attributes.offer(((OrGate)node).getRight());
+				}
+			}
+			
+		}else{
+			//Not satisfiable!!!
+			return null;
+		}
+		
+		return selrows;
 	}
 }
