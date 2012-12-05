@@ -15,7 +15,7 @@ public class PerformanceUtils {
 	public final static int TEST_PERIOD_MILLIS = 23000;
 	
 	//default performance index on a computer, used to normalize test results
-	public final static double DEFAULT_PERFORMANCE = 40.52174;
+	public final static double DEFAULT_PERFORMANCE = 18.3881064;
 	
 	//reject, instead of using mod p, to give even distribution of results
 	public static BigInteger random(BigInteger p) {
@@ -58,16 +58,18 @@ public class PerformanceUtils {
 		Pairing pairing = PairingFactory.getPairing(gp.getCurveParams());
 		
 		long start = System.currentTimeMillis();
+		long elapsed;
 
-		while (System.currentTimeMillis() - start < TEST_PERIOD_MILLIS) {
-			BigInteger bgint = BigInteger.valueOf(2).pow(37).subtract(
-								random(BigInteger.valueOf(2).pow(5)));
-			Element e = pairing.getG1().newRandomElement().getImmutable();
+		Element e = pairing.getG1().newRandomElement().getImmutable();
+		do {
+			BigInteger bgint = BigInteger.valueOf(2).pow(237).subtract(
+								random(BigInteger.valueOf(2).pow(8)));
 			e.pow(bgint);
 			count++;
-		}
+			elapsed = System.currentTimeMillis() - start;
+		} while (elapsed < TEST_PERIOD_MILLIS);
 		
-		return count*1000.0/(double)TEST_PERIOD_MILLIS;
+		return count*1000.0/(double)elapsed;
 	}
 	
 }

@@ -7,6 +7,7 @@ import java.util.Map;
 public class PersonalKeys {
 	private String userID;
 	private Map<String, PersonalKey> personalKeys;
+	private byte[] preprocess;
 	
 	public PersonalKeys(String userID) {
 		this.userID = userID;
@@ -19,6 +20,13 @@ public class PersonalKeys {
 
 	public String getUserID() {
 		return userID;
+	}
+	
+	public byte[] getUserIDPreprocessed(){
+		return preprocess;
+	}
+	public void setUserIDPreprocessed(byte[] preprocess){
+		this.preprocess=preprocess;
 	}
 	
 	public Collection<String> getAttributes() {

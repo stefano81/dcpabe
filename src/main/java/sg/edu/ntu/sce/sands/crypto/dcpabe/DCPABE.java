@@ -1,8 +1,10 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
+import it.unisa.dia.gas.jpbc.PairingPreProcessing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1CurveGenerator;
+import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1TateNafProjectiveMillerPairingMap;
 
 import java.util.List;
 import java.util.Vector;
@@ -153,20 +155,23 @@ public class DCPABE {
 		Element HGID = pairing.getG1().newElement();
 		HGID.setFromHash(pks.getUserID().getBytes(), 0, pks.getUserID().getBytes().length);
 		HGID = HGID.getImmutable();
+		
+		PairingPreProcessing eHGID = pairing.pairing(HGID);
 
 		Element t = pairing.getGT().newOneElement();
 		
 		for (Integer x : toUse) {
 			Element c3x = pairing.getG1().newElement();
 			c3x.setFromBytes(CT.getC3(x));
-			Element p1 = pairing.pairing(HGID, c3x);
+			Element p1 = eHGID.pairing(c3x);
 			
-			Element key = pairing.getG1().newElement();
-			key.setFromBytes(pks.getKey(CT.getAccessStructure().rho(x)).getKey());
+			PairingPreProcessing eKey = pairing.pairing(
+					pks.getKey(CT.getAccessStructure().rho(x))
+					.getKeyPreprocessed());
 			
 			Element c2x = pairing.getG1().newElement();
 			c2x.setFromBytes(CT.getC2(x));
-			Element p2 = pairing.pairing(key, c2x);
+			Element p2 = eKey.pairing(c2x);
 			
 			Element c1x = pairing.getGT().newElement();
 			c1x.setFromBytes(CT.getC1(x));
@@ -190,7 +195,13 @@ public class DCPABE {
 		Element yi = pairing.getZr().newElement();
 		yi.setFromBytes(sk.getYi());
 		
-		return new PersonalKey(attribute, GP.getG1().powZn(ai).mul(HGID.powZn(yi)).toBytes());
+		Element key = GP.getG1().powZn(ai).mul(HGID.powZn(yi));
+		
+		PersonalKey pk = new PersonalKey(attribute, key.toBytes());
+		
+		pk.setKeyPreprocessed(pairing.pairing(key).toBytes());
+		
+		return pk;
 	}
 	
 	private static Element dotProduct(Vector<MatrixElement> v1, Vector<Element> v2, Element element, Pairing pairing) {

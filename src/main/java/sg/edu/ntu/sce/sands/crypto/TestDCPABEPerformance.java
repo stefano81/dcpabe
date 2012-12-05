@@ -24,11 +24,15 @@ public class TestDCPABEPerformance {
 		CLIENT_ATTR_NUM
 	}
 	
-	static int num_rounds = 60;
+	static int num_rounds = 40;
 	static int num_user_tested = 60;
 	static String user_name = "defaultUser";
+	
+	static double factor;
 
 	static void Test(GlobalParameters gp, TestMode mode, int min, int max, int defAttr, int defPol, int defClient){
+		
+		Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 		
 		//a random 192-bit integer as cleartext
 		BigInteger cleartext = PerformanceUtils.random(BigInteger.valueOf(65536).pow(12));
@@ -38,7 +42,7 @@ public class TestDCPABEPerformance {
 		double performance_index=PerformanceUtils.getPerformanceIndex(gp);
 		System.out.println("Performance Index: " + performance_index);
 		
-		double factor = performance_index/PerformanceUtils.DEFAULT_PERFORMANCE;
+		factor = performance_index/PerformanceUtils.DEFAULT_PERFORMANCE;
 		System.out.println("Factor: " + PerformanceUtils.formatNumber(factor*100.0, 2) + "%");
 		
 		switch (mode){
@@ -126,7 +130,7 @@ public class TestDCPABEPerformance {
 	
 		time=(((double)newtime+(double)oldtime)/2.0/1000000000.0);
 		
-		System.out.println("\tEncryption Time="+PerformanceUtils.formatNumber(time/(double)pass_num, 12)+"s");
+		System.out.println("\tEncryption Time="+PerformanceUtils.formatNumber(time/(double)pass_num*factor, 12)+"s");
 		System.gc();
 		oldtime=0;
 		newtime=0;
@@ -155,12 +159,10 @@ public class TestDCPABEPerformance {
 		time=(((double)newtime+(double)oldtime)/2.0/1000000000.0);
 		
 		System.out.println("\tDecryption Time="
-		+PerformanceUtils.formatNumber(time/(double)pass_num/(double)num_user_tested, 12)
+		+PerformanceUtils.formatNumber(time/(double)pass_num/(double)num_user_tested*factor, 12)
 		+"s, percentage fail="
 		+(double)failed/(double)num_user_tested/(double)pass_num*100.0
 		+"%");
-		
-		//System.out.println(use1+", "+use2);
 		
 		//System.out.println(PerformanceUtils.formatNumber(time/(double)pass_num/((double)internal_pass), 10)+", ");
 		
