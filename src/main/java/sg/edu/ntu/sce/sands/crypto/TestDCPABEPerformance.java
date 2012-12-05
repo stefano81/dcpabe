@@ -24,8 +24,8 @@ public class TestDCPABEPerformance {
 		CLIENT_ATTR_NUM
 	}
 	
-	static int num_rounds = 40;
-	static int num_user_tested = 60;
+	static int num_rounds = 10;
+	static int num_user_tested = 10;
 	static String user_name = "defaultUser";
 	
 	static double factor;

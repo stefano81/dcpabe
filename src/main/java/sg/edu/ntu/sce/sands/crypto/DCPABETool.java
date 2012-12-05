@@ -407,6 +407,6 @@ public class DCPABETool {
 		System.out.println("keygen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>");
 		System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
 		System.out.println("dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1>...<keyfile n>");
-		System.out.println("test <mode: ATTRIBUTE, POLICY_LEN, CLIENT_ATTR_NUM> <minValue> <maxValue> <defAttributeNum> <defPolicyLen> <defClientAttributeNum>");
+		System.out.println("test gpfile <mode: ATTRIBUTE, POLICY_LEN, CLIENT_ATTR_NUM> <minValue> <maxValue> <defAttributeNum> <defPolicyLen> <defClientAttributeNum>");
 	}
 }

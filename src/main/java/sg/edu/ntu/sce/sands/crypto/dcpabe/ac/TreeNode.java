@@ -5,8 +5,12 @@ import java.io.Serializable;
 public abstract class TreeNode implements Serializable {
 	private static final long serialVersionUID = 1L;
 	protected String label;
-	protected int sat;
+	protected transient int sat;
 	protected InternalNode parent;
+	
+	//TODO: find some other alternative, right now using hard-coded theoretical maximum
+	transient public int satisfied_num = 2147483647;
+	transient public TreeNode full_satisfied = null;
 	
 	abstract String getName();
 	
@@ -33,17 +37,6 @@ public abstract class TreeNode implements Serializable {
 	
 	public void setLabel(String label) {
 		this.label = label;
-	}
-	
-	protected int index = 0;
-	
-	public int getIndex(){
-		return index;
-	}
-	
-	public TreeNode setIndex(int in){
-		index=in;
-		return this;
 	}
 
 	@Override

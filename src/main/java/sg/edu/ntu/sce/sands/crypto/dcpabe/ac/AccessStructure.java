@@ -17,6 +17,7 @@ public class AccessStructure implements Serializable {
 	}
 	
 	private static final long serialVersionUID = 1L;
+	private static final int MAX_INT = 2147483647;
 	private Map<Integer, String> rho;
 	private Vector<Vector<MatrixElement>> A;
 	private TreeNode policyTree;
@@ -307,112 +308,66 @@ public class AccessStructure implements Serializable {
 			return false;
 		return true;
 	}
+	
+	LinkedList<TreeNode> initialize_queue(Collection<String> pKeys){
+		LinkedList<TreeNode> tmp = new LinkedList<TreeNode>();
+		LinkedList<TreeNode> queue = new LinkedList<TreeNode>();
+		
+		tmp.add(policyTree);
+		while (!tmp.isEmpty()) {
+			TreeNode t = tmp.poll();
+			
+			//initialize
+			t.full_satisfied = null;
+			t.satisfied_num = MAX_INT;
+			
+			if (t instanceof Attribute) {
+				if (pKeys.contains(t.getName())){
+					t.satisfied_num = 1;
+					queue.offer(t);
+				}
+			} else	if (t instanceof InternalNode) {
+				
+				if (t instanceof AndGate){	//initialize
+					((AndGate) t).satisfied_num_left=MAX_INT;
+					((AndGate) t).satisfied_num_right=MAX_INT;
+					((AndGate) t).satisfied_left = false;
+					((AndGate) t).satisfied_right = false;
+				}
+				
+				tmp.add(((InternalNode) t).getLeft());
+				tmp.add(((InternalNode) t).getRight());
+			}
+		}
+		
+		return queue;
+	}
 
 	public List<Integer> getIndexesList_Breadth(Collection<String> pKeys) {
 		
 		List<Integer> selrows = null;
 
-		LinkedList<TreeNode> queue_attributes = new LinkedList<TreeNode>();
-		LinkedList<TreeNode> queue2 = new LinkedList<TreeNode>();
-		
-		int node_count=1;
-		queue2.add(policyTree);
-		while (!queue2.isEmpty()) {
-			TreeNode t = queue2.poll();
-			t.setIndex(node_count);
-			node_count++;
-
-			if (t instanceof Attribute) {
-				if (pKeys.contains(t.getName()))
-					queue_attributes.offer(t);
-			} else	if (t instanceof InternalNode) {
-				queue2.add(((InternalNode) t).getLeft());
-				queue2.add(((InternalNode) t).getRight());
-			}
-		}
-		
-		boolean [] satisfied_left=new boolean[node_count+1];
-		boolean [] satisfied_right=new boolean[node_count+1];
-		int [] full_satisfied=new int[node_count+1];	//if satisfied, returns satisfied by who (tree index)
-		int [] satisfied_num =new int[node_count+1];	//if satisfied, by how many attributes
-		int [] satisfied_num_left =new int[node_count+1];
-		int [] satisfied_num_right =new int[node_count+1];
-		
-		Arrays.fill(satisfied_left, false);
-		Arrays.fill(satisfied_right, false);
-		Arrays.fill(full_satisfied, -1);
-		Arrays.fill(satisfied_num, node_count+1);
-		Arrays.fill(satisfied_num_left, node_count+1);
-		Arrays.fill(satisfied_num_right, node_count+1);
-		
-		for (TreeNode i : queue_attributes){
-			satisfied_num[i.getIndex()]=1;
-		}
+		LinkedList<TreeNode> queue = initialize_queue(pKeys);
 		
 		boolean reached=false;
-		while (!queue_attributes.isEmpty()){
-			TreeNode node=queue_attributes.remove();
+		while (!queue.isEmpty()){
+			TreeNode node=queue.remove();
+			
 			if (node==policyTree){	//reached root
 				reached=true;
+				continue;
 			}
+			
 			TreeNode parent=node.getParent();
 			if (parent instanceof AndGate){
-				if (full_satisfied[parent.getIndex()]==-1){		//we reached first
-					
-					if (node==((AndGate) parent).getLeft()){
-						satisfied_num_left[parent.getIndex()] = satisfied_num[node.getIndex()];
-					}else if (node==((AndGate) parent).getRight()){
-						satisfied_num_right[parent.getIndex()] = satisfied_num[node.getIndex()];
-					}else new IllegalArgumentException("Not supposed to be here!");
-					
-					if (!satisfied_left[parent.getIndex()] && node==((AndGate) parent).getLeft()){
-						satisfied_left[parent.getIndex()]=true;
-					}
-					
-					if (!satisfied_right[parent.getIndex()] && node==((AndGate) parent).getRight()){
-						satisfied_right[parent.getIndex()]=true;
-					}
-					
-					if (satisfied_right[parent.getIndex()] && satisfied_left[parent.getIndex()]){
-						full_satisfied[parent.getIndex()]=node.getIndex();
-						queue_attributes.offer(parent);
-						
-						satisfied_num[parent.getIndex()] = 
-								satisfied_num_left[parent.getIndex()] +
-								satisfied_num_right[parent.getIndex()];
-					}
-					
-				}else{	//will accept if uses less attributes
-					if (node==((AndGate) parent).getLeft()){
-						if (satisfied_num[node.getIndex()]<satisfied_num_left[parent.getIndex()]){
-							satisfied_num_left[parent.getIndex()] = satisfied_num[node.getIndex()];
-							
-							satisfied_num[parent.getIndex()] = 
-									satisfied_num_left[parent.getIndex()] +
-									satisfied_num_right[parent.getIndex()];
-							
-							full_satisfied[parent.getIndex()]=node.getIndex();
-							queue_attributes.offer(parent);
-						}
-					}else if (node==((AndGate) parent).getRight()){
-						if (satisfied_num[node.getIndex()]<satisfied_num_right[parent.getIndex()]){
-							satisfied_num_right[parent.getIndex()] = satisfied_num[node.getIndex()];
-							
-							satisfied_num[parent.getIndex()] = 
-									satisfied_num_left[parent.getIndex()] +
-									satisfied_num_right[parent.getIndex()];
-							
-							full_satisfied[parent.getIndex()]=node.getIndex();
-							queue_attributes.offer(parent);
-						}
-					}else new IllegalArgumentException("Not supposed to be here!");
-				}
+				if (((AndGate)parent).canSatisfy(node))
+					queue.offer(parent);
 			}else{
 				if (parent instanceof OrGate){
-					if (satisfied_num[node.getIndex()]<satisfied_num[parent.getIndex()]){
-						full_satisfied[parent.getIndex()]=node.getIndex();
-						satisfied_num[parent.getIndex()] = satisfied_num[node.getIndex()];
-						queue_attributes.offer(parent);
+					if (node.satisfied_num < parent.satisfied_num){
+						parent.full_satisfied = node;
+						parent.satisfied_num = node.satisfied_num;
+						queue.offer(parent);
 					}
 				}
 			}
@@ -420,11 +375,11 @@ public class AccessStructure implements Serializable {
 		
 		if (reached){
 			selrows=new Vector<Integer>();
-			queue_attributes.clear();
+			queue.clear();
 			
-			queue_attributes.offer(policyTree);
-			while (!queue_attributes.isEmpty()){
-				TreeNode node=queue_attributes.remove();
+			queue.offer(policyTree);
+			while (!queue.isEmpty()){
+				TreeNode node=queue.remove();
 				
 				if (node instanceof Attribute){
 					selrows.add(((Attribute) node).getX());
@@ -432,17 +387,21 @@ public class AccessStructure implements Serializable {
 				}
 				
 				if (node instanceof AndGate){
-					queue_attributes.offer(((InternalNode)node).getLeft());
-					queue_attributes.offer(((InternalNode)node).getRight());
+					queue.offer(((InternalNode)node).getLeft());
+					queue.offer(((InternalNode)node).getRight());
 					continue;
 				}
 
 				if (node instanceof OrGate){
-					int index=full_satisfied[node.getIndex()];
-					if (((OrGate)node).getLeft().getIndex()==index)
-						queue_attributes.offer(((OrGate)node).getLeft());
+					TreeNode child_node=node.full_satisfied;
+					
+					if (((OrGate)node).getLeft()==child_node)
+						queue.offer(((OrGate)node).getLeft());
 					else
-						queue_attributes.offer(((OrGate)node).getRight());
+						if (((OrGate)node).getRight()==child_node)
+							queue.offer(((OrGate)node).getRight());
+						else
+							throw new IllegalArgumentException("dangling child?!");
 				}
 			}
 			
