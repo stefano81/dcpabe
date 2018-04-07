@@ -10,19 +10,19 @@ public class AccessStructure implements Serializable {
     private TreeNode policyTree;
     private int partsIndex;
 
-    protected AccessStructure() {
+    private AccessStructure() {
         A = new Vector<Vector<MatrixElement>>();
         rho = new HashMap<Integer, String>();
     }
 
     public static AccessStructure buildFromPolicy(String policy) {
-        AccessStructure arho = new AccessStructure();
+        AccessStructure aRho = new AccessStructure();
 
-        arho.generateTree(policy);
+        aRho.generateTree(policy);
 
-        arho.generateMatrix();
+        aRho.generateMatrix();
 
-        return arho;
+        return aRho;
     }
 
     public Vector<MatrixElement> getRow(int row) {
@@ -193,15 +193,9 @@ public class AccessStructure implements Serializable {
     private TreeNode generateTree(String[] policyParts) {
         partsIndex++;
 
-        TreeNode node;
+        String policyAtIndex = policyParts[partsIndex];
+        TreeNode node = generateNodeAtIndex(policyAtIndex);
 
-        if ("and".equals(policyParts[partsIndex])) {
-            node = new AndGate();
-        } else if ("or".equals(policyParts[partsIndex])) {
-            node = new OrGate();
-        } else {
-            node = new Attribute(policyParts[partsIndex]);
-        }
         if (node instanceof InternalNode) {
             ((InternalNode) node).setLeft(generateTree(policyParts));
             ((InternalNode) node).setRight(generateTree(policyParts));
@@ -210,10 +204,21 @@ public class AccessStructure implements Serializable {
         return node;
     }
 
+    private TreeNode generateNodeAtIndex(String policyAtIndex) {
+        switch (policyAtIndex) {
+            case "and":
+                return new AndGate();
+            case "or":
+                return new OrGate();
+            default:
+                return new Attribute(policyAtIndex);
+        }
+    }
+
     private void generateTree(String policy) {
         partsIndex = -1;
 
-        String[] policyParts = policy.split(" ");
+        String[] policyParts = policy.split("\\s+");
 
         policyTree = generateTree(policyParts);
     }
@@ -222,8 +227,8 @@ public class AccessStructure implements Serializable {
         for (int x = 0; x < A.size(); x++) {
             Vector<MatrixElement> Ax = A.get(x);
             System.out.printf("%s: [", rho.get(x));
-            for (int i = 0; i < Ax.size(); i++) {
-                switch (Ax.get(i)) {
+            for (MatrixElement aAx : Ax) {
+                switch (aAx) {
                     case ONE:
                         System.out.print("  1");
                         break;

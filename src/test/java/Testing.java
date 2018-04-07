@@ -7,6 +7,7 @@ import org.junit.runners.JUnit4;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.*;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -19,7 +20,6 @@ import static org.junit.Assert.assertTrue;
 public class Testing {
     @Test
     public void testDCPABE2() {
-
         GlobalParameters gp = DCPABE.globalSetup(160);
         PublicKeys publicKeys = new PublicKeys();
 
@@ -94,8 +94,8 @@ public class Testing {
 
     @Test
     public void testBilinearity() {
-        Random random = new Random(123456);
-        Pairing pairing = PairingFactory.getPairing("/Users/stefano/Projects/jpbc/params/a_181_603.properties", random);
+        SecureRandom random = new SecureRandom("12345".getBytes());
+        Pairing pairing = PairingFactory.getPairing("/a_181_603.properties", random);
 
         Element g1 = pairing.getG1().newRandomElement().getImmutable();
         Element g2 = pairing.getG2().newRandomElement().getImmutable();

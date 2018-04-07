@@ -16,7 +16,6 @@ public class TestDCPABETool {
     File resFile2 = new File("/tmp/res.dec");
     File key1AFile = new File("/tmp/user1_a.key");
     File key1DFile = new File("/tmp/user1_d.key");
-    File key2AFile = new File("/tmp/user2_a.key");
     String policy = "and a or d and b c";
 
     @Test
@@ -46,12 +45,12 @@ public class TestDCPABETool {
             DCPABETool.main(args);
         }
         if (!key1AFile.exists()) {
-            String[] args = {"keygen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
+            String[] args = {"keyGen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
 
             DCPABETool.main(args);
         }
         if (!key1DFile.exists()) {
-            String[] args = {"keygen", "user1", "d", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
+            String[] args = {"keyGen", "user1", "d", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
 
             DCPABETool.main(args);
         }
@@ -92,12 +91,12 @@ public class TestDCPABETool {
             DCPABETool.main(args);
         }
         if (!key1AFile.exists()) {
-            String[] args = {"keygen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
+            String[] args = {"keyGen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
 
             DCPABETool.main(args);
         }
         if (!key1DFile.exists()) {
-            String[] args = {"keygen", "user1", "d", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
+            String[] args = {"keyGen", "user1", "d", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
 
             DCPABETool.main(args);
         }
@@ -175,7 +174,7 @@ public class TestDCPABETool {
         assertTrue(gpFile.exists());
         assertFalse(key1AFile.exists());
 
-        String[] args = {"keygen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
+        String[] args = {"keyGen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
 
         DCPABETool.main(args);
 

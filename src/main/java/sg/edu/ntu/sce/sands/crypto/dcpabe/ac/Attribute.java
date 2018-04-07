@@ -45,8 +45,6 @@ public class Attribute extends TreeNode {
                 return false;
         } else if (!name.equals(other.name))
             return false;
-        if (x != other.x)
-            return false;
-        return true;
+        return x == other.x;
     }
 }

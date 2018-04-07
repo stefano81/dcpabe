@@ -4,8 +4,8 @@ import java.io.Serializable;
 
 public abstract class TreeNode implements Serializable {
     private static final long serialVersionUID = 1L;
-    protected String label;
-    protected int sat;
+    private String label;
+    private int sat;
 
     abstract String getName();
 

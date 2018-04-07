@@ -14,8 +14,8 @@ public class DCPABE {
     public static GlobalParameters globalSetup(int lambda) {
         GlobalParameters params = new GlobalParameters();
 
-        params.setCurveParams(new TypeA1CurveGenerator(3, lambda).generate());
-        Pairing pairing = PairingFactory.getPairing(params.getCurveParams());
+        params.setPairingParameters(new TypeA1CurveGenerator(3, lambda).generate());
+        Pairing pairing = PairingFactory.getPairing(params.getPairingParameters());
 
         params.setG1(pairing.getG1().newRandomElement().getImmutable());
 
@@ -25,7 +25,7 @@ public class DCPABE {
     public static AuthorityKeys authoritySetup(String authorityID, GlobalParameters GP, String... attributes) {
         AuthorityKeys authorityKeys = new AuthorityKeys(authorityID);
 
-        Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
+        Pairing pairing = PairingFactory.getPairing(GP.getPairingParameters());
         Element eg1g1 = pairing.pairing(GP.getG1(), GP.getG1()).getImmutable();
         for (String attribute : attributes) {
             Element ai = pairing.getZr().newRandomElement().getImmutable();
@@ -44,7 +44,7 @@ public class DCPABE {
     public static Ciphertext encrypt(Message message, AccessStructure arho, GlobalParameters GP, PublicKeys pks) {
         Ciphertext ct = new Ciphertext();
 
-        Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
+        Pairing pairing = PairingFactory.getPairing(GP.getPairingParameters());
 
         Element M = pairing.getGT().newRandomElement().getImmutable();
         message.m = M.toBytes();
@@ -98,7 +98,7 @@ public class DCPABE {
 
         if (null == toUse || toUse.isEmpty()) throw new IllegalArgumentException("not satisfying");
 
-        Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
+        Pairing pairing = PairingFactory.getPairing(GP.getPairingParameters());
 
         Element HGID = pairing.getG1().newElement();
         HGID.setFromHash(pks.getUserID().getBytes(), 0, pks.getUserID().getBytes().length);
@@ -131,7 +131,7 @@ public class DCPABE {
     }
 
     public static PersonalKey keyGen(String userID, String attribute, SecretKey sk, GlobalParameters GP) {
-        Pairing pairing = PairingFactory.getPairing(GP.getCurveParams());
+        Pairing pairing = PairingFactory.getPairing(GP.getPairingParameters());
 
         Element HGID = pairing.getG1().newElement();
         HGID.setFromHash(userID.getBytes(), 0, userID.getBytes().length);

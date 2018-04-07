@@ -15,12 +15,11 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class TestCiphertext {
-    static GlobalParameters gp;
-    static AuthorityKeys authority;
-    Ciphertext ct;
-    Message m;
-    AccessStructure arho;
-    PublicKeys pks;
+    private static GlobalParameters gp;
+    private static AuthorityKeys authority;
+    private Message m;
+    private AccessStructure arho;
+    private PublicKeys pks;
 
     @BeforeClass
     public static void init() {
@@ -29,15 +28,11 @@ public class TestCiphertext {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         m = new Message();
         arho = AccessStructure.buildFromPolicy("and A or D and C B");
         pks = new PublicKeys();
         pks.subscribeAuthority(authority.getPublicKeys());
-    }
-
-    @After
-    public void tearDown() throws Exception {
     }
 
     @Test
