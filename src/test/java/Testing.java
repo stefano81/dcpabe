@@ -1,6 +1,8 @@
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
+import it.unisa.dia.gas.jpbc.PairingParameters;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
+import it.unisa.dia.gas.plaf.jpbc.pairing.a.TypeACurveGenerator;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -79,7 +81,7 @@ public class Testing {
         as1.printPolicy();
         as1.printMatrix();
 
-        ArrayList<String> attributes = new ArrayList<String>();
+        ArrayList<String> attributes = new ArrayList<>();
         attributes.add("a");
         attributes.add("d");
 
@@ -95,7 +97,7 @@ public class Testing {
     @Test
     public void testBilinearity() {
         SecureRandom random = new SecureRandom("12345".getBytes());
-        Pairing pairing = PairingFactory.getPairing("/a_181_603.properties", random);
+        Pairing pairing = PairingFactory.getPairing(new TypeACurveGenerator(random, 181, 603, true).generate());
 
         Element g1 = pairing.getG1().newRandomElement().getImmutable();
         Element g2 = pairing.getG2().newRandomElement().getImmutable();

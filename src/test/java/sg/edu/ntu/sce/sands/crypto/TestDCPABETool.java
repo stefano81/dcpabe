@@ -1,5 +1,6 @@
 package sg.edu.ntu.sce.sands.crypto;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -17,6 +18,18 @@ public class TestDCPABETool {
     File key1AFile = new File("/tmp/user1_a.key");
     File key1DFile = new File("/tmp/user1_d.key");
     String policy = "and a or d and b c";
+
+    @Before
+    public void setUp() {
+        gpFile.delete();
+        apFileS.delete();
+        apFileP.delete();
+        encFile.delete();
+        resFile.delete();
+        resFile2.delete();
+        key1AFile.delete();
+        key1DFile.delete();
+    }
 
     @Test
     public void testDecryptOk() throws Exception {
