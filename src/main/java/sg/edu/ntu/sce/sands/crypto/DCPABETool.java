@@ -1,21 +1,5 @@
 package sg.edu.ntu.sce.sands.crypto;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.security.Security;
-import java.util.Arrays;
-import java.util.Map;
-
 import org.bouncycastle.crypto.CipherParameters;
 import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
@@ -25,337 +9,332 @@ import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
-import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKey;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKey;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.SecretKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.*;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 
+import java.io.*;
+import java.security.Security;
+import java.util.Arrays;
+import java.util.Map;
+
 public class DCPABETool {
-	private static int BLOCKSIZE = 16;
+    private static int BLOCKSIZE = 16;
 
-	public static void main(String[] args) {
-		Security.addProvider(new BouncyCastleProvider());
-		
-		if (encrypt(args) ||
-				decrypt(args) ||
-				globalsetup(args) ||
-				keygen(args) ||
-				authhoritysetup(args) ||
-				check(args))
-			return;
-		else
-			help();
-	}
+    public static void main(String[] args) {
+        Security.addProvider(new BouncyCastleProvider());
 
-	// asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>
-	private static boolean authhoritysetup(String[] args) {
-		if (!args[0].equals("asetup") || args.length <= 5) return false;
+        if (encrypt(args) ||
+                decrypt(args) ||
+                globalsetup(args) ||
+                keygen(args) ||
+                authhoritysetup(args) ||
+                check(args))
+            return;
+        else
+            help();
+    }
 
-		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[2]));
+    // asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>
+    private static boolean authhoritysetup(String[] args) {
+        if (!args[0].equals("asetup") || args.length <= 5) return false;
 
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[2]));
 
-			String[] subArgs = Arrays.copyOfRange(args, 5, args.length);
+            GlobalParameters gp = (GlobalParameters) ois.readObject();
+            ois.close();
 
-			AuthorityKeys ak = DCPABE.authoritySetup(args[1], gp, subArgs);
+            String[] subArgs = Arrays.copyOfRange(args, 5, args.length);
 
-			ObjectOutputStream oos =  new ObjectOutputStream(new FileOutputStream(args[3]));
-			//oos.writeObject(ak.getAuthorityID());
-			oos.writeObject(ak.getSecretKeys());
-			oos.flush();
-			oos.close();
+            AuthorityKeys ak = DCPABE.authoritySetup(args[1], gp, subArgs);
 
-			oos = new ObjectOutputStream(new FileOutputStream(args[4]));
-			//oos.writeObject(ak.getAuthorityID());
-			oos.writeObject(ak.getPublicKeys());
-			oos.flush();
-			oos.close();
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[3]));
+            //oos.writeObject(ak.getAuthorityID());
+            oos.writeObject(ak.getSecretKeys());
+            oos.flush();
+            oos.close();
 
-			return true;
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (ClassNotFoundException e) {
-			System.err.println(e.getMessage());
-		}
+            oos = new ObjectOutputStream(new FileOutputStream(args[4]));
+            //oos.writeObject(ak.getAuthorityID());
+            oos.writeObject(ak.getPublicKeys());
+            oos.flush();
+            oos.close();
 
-		return false;
-	}
+            return true;
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.err.println(e.getMessage());
+        }
 
-	// keygen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>
-	private static boolean keygen(String[] args) {
-		if (!args[0].equals("keygen") || args.length != 6) return false;
+        return false;
+    }
 
-		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[3]));
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
+    // keygen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>
+    private static boolean keygen(String[] args) {
+        if (!args[0].equals("keygen") || args.length != 6) return false;
 
-			ois = new ObjectInputStream(new FileInputStream(args[4]));
-			@SuppressWarnings("unchecked")
-			Map<String, SecretKey> skeys = (Map<String, SecretKey>) ois.readObject();
-			ois.close();
-			SecretKey sk = skeys.get(args[2]);
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[3]));
+            GlobalParameters gp = (GlobalParameters) ois.readObject();
+            ois.close();
 
-			if (null == sk) {
-				System.err.println("Attribute not handled");
-				return false;
-			}
+            ois = new ObjectInputStream(new FileInputStream(args[4]));
+            @SuppressWarnings("unchecked")
+            Map<String, SecretKey> skeys = (Map<String, SecretKey>) ois.readObject();
+            ois.close();
+            SecretKey sk = skeys.get(args[2]);
 
-			PersonalKey pk = DCPABE.keyGen(args[1], args[2], sk, gp);
+            if (null == sk) {
+                System.err.println("Attribute not handled");
+                return false;
+            }
 
-			ObjectOutputStream oos =  new ObjectOutputStream(new FileOutputStream(args[5]));
-			oos.writeObject(pk);
-			oos.flush();
-			oos.close();
+            PersonalKey pk = DCPABE.keyGen(args[1], args[2], sk, gp);
 
-			return true;
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			System.err.println(e.getMessage());
-		}
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[5]));
+            oos.writeObject(pk);
+            oos.flush();
+            oos.close();
 
-		return false;
-	}
+            return true;
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            System.err.println(e.getMessage());
+        }
 
-	private static boolean globalsetup(String[] args) {
-		if (!args[0].equals("gsetup") || args.length != 2) return false;
+        return false;
+    }
 
-		try {
-			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[1]));
+    private static boolean globalsetup(String[] args) {
+        if (!args[0].equals("gsetup") || args.length != 2) return false;
 
-			GlobalParameters gp = DCPABE.globalSetup(160);
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[1]));
 
-			oos.writeObject(gp);
-			oos.flush();
-			oos.close();
+            GlobalParameters gp = DCPABE.globalSetup(160);
 
-			return true;
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (IOException e) {
-			System.err.println("Error operating on the file");
-		}
+            oos.writeObject(gp);
+            oos.flush();
+            oos.close();
 
-		return false;
-	}
-	
-	// check <username> <policy> <gpfile> m <authorityP 1>...<authorityP m> n <keyfile 1> ... <keyfile n>
-	@SuppressWarnings("unchecked")
-	private static boolean check(String[] args) {
-		if (!args[0].equals("check") || args.length < 8) return false;
+            return true;
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error operating on the file");
+        }
 
-		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[3]));
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
-			
-			PublicKeys pubKeys = new PublicKeys();
-			
-			int m = Integer.parseInt(args[4]);
-			for (int i = 0; i < m; i++) {
-				ois = new ObjectInputStream(new FileInputStream(args[4+i+1]));
-				pubKeys.subscribeAuthority((Map<String, PublicKey>) ois.readObject());
-				ois.close();
-			}
-			
-			Message om = new Message();
-			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
-			Ciphertext oct = DCPABE.encrypt(om, arho, gp, pubKeys);
-			
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ObjectOutputStream oos = new ObjectOutputStream(baos);
-			oos.writeObject(oct);
-			oos.flush();
-			oos.close();
-			
-			ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
-			Ciphertext nct = (Ciphertext) ois.readObject();
+        return false;
+    }
 
-			arho.printPolicy();
-			
-			PersonalKeys pks = new PersonalKeys(args[1]);
-			
-			int n = Integer.parseInt(args[4+m+1]);
-			for (int i = 0; i < n; i++) {
-				ois = new ObjectInputStream(new FileInputStream(args[4+i+m+2]));
-				PersonalKey pk = (PersonalKey) ois.readObject();
-				System.err.println(pk.getAttribute());
-				pks.addKey(pk);
-				ois.close();
-			}
-			
-			Message dm = DCPABE.decrypt(nct, pks, gp);
+    // check <username> <policy> <gpfile> m <authorityP 1>...<authorityP m> n <keyfile 1> ... <keyfile n>
+    @SuppressWarnings("unchecked")
+    private static boolean check(String[] args) {
+        if (!args[0].equals("check") || args.length < 8) return false;
 
-			System.err.println(om.m.length);
-			System.err.println(dm.m.length);
-			System.err.println(Arrays.toString(om.m));
-			System.err.println(Arrays.toString(dm.m));
-			
-			return true;
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (ClassNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (DataLengthException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[3]));
+            GlobalParameters gp = (GlobalParameters) ois.readObject();
+            ois.close();
 
-		return false;
-	}
+            PublicKeys pubKeys = new PublicKeys();
 
-	// dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
-	private static boolean decrypt(String[] args) {
-		if (!args[0].equals("dec") || args.length < 6) return false;
+            int m = Integer.parseInt(args[4]);
+            for (int i = 0; i < m; i++) {
+                ois = new ObjectInputStream(new FileInputStream(args[4 + i + 1]));
+                pubKeys.subscribeAuthority((Map<String, PublicKey>) ois.readObject());
+                ois.close();
+            }
 
-		try {
-			ObjectInputStream oIn = new ObjectInputStream(new FileInputStream(args[2]));
-			Ciphertext ct = (Ciphertext) oIn.readObject();
-			
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
+            Message om = new Message();
+            AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
+            Ciphertext oct = DCPABE.encrypt(om, arho, gp, pubKeys);
 
-			PersonalKeys pks = new PersonalKeys(args[1]);
-			
-			for (int i = 5; i < args.length; i++) {
-				ois = new ObjectInputStream(new FileInputStream(args[i]));
-				PersonalKey pk = (PersonalKey) ois.readObject();
-				System.err.println(pk.getAttribute());
-				ois.close();
-				pks.addKey(pk);
-			}
-			
-			Message m = DCPABE.decrypt(ct, pks, gp);
-			
-		    System.err.println(Arrays.toString(m.m));
-			
-			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
-		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
-		    aes.init(false, ivAndKey);
-		    
-		    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]));
-		    cipherData(aes, oIn, bos);
-		    bos.flush();
-		    bos.close();
-		    ois.close();
-			
-			return true;
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (ClassNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (DataLengthException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalStateException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (InvalidCipherTextException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(oct);
+            oos.flush();
+            oos.close();
 
-		return false;
-	}
-	
-	private static void cipherData(PaddedBufferedBlockCipher cipher, InputStream is, OutputStream os) throws DataLengthException, IllegalStateException, InvalidCipherTextException, IOException  {
-		byte[] inBuff = new byte[cipher.getBlockSize()];
-	    byte[] outBuff = new byte[cipher.getOutputSize(inBuff.length)];
-	    int nbytes;
-	    while (-1 != (nbytes = is.read(inBuff, 0, inBuff.length))) {
-	    	int length1 = cipher.processBytes(inBuff, 0, nbytes, outBuff, 0);
-	    	os.write(outBuff, 0, length1);
-	    }
-	    nbytes = cipher.doFinal(outBuff, 0);
-	    os.write(outBuff, 0, nbytes);
-	}
+            ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+            Ciphertext nct = (Ciphertext) ois.readObject();
 
-	// enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>
-	@SuppressWarnings("unchecked")
-	private static boolean encrypt(String[] args) {
-		if (!args[0].equals("enc") || args.length < 6) return false;
+            arho.printPolicy();
 
-		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
+            PersonalKeys pks = new PersonalKeys(args[1]);
 
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
+            int n = Integer.parseInt(args[4 + m + 1]);
+            for (int i = 0; i < n; i++) {
+                ois = new ObjectInputStream(new FileInputStream(args[4 + i + m + 2]));
+                PersonalKey pk = (PersonalKey) ois.readObject();
+                System.err.println(pk.getAttribute());
+                pks.addKey(pk);
+                ois.close();
+            }
 
-			PublicKeys pks = new PublicKeys();
+            Message dm = DCPABE.decrypt(nct, pks, gp);
 
-			for (int i = 5; i < args.length; i++) {
-				ois = new ObjectInputStream(new FileInputStream(args[i]));
-				pks.subscribeAuthority((Map<String, PublicKey>) ois.readObject());
-			}
+            System.err.println(om.m.length);
+            System.err.println(dm.m.length);
+            System.err.println(Arrays.toString(om.m));
+            System.err.println(Arrays.toString(dm.m));
 
-			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
-			arho.printPolicy();
-			System.out.println();
-			Message m = new Message();
-			Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
-			
-			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[3]));
-			oos.writeObject(ct);
+            return true;
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (DataLengthException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalStateException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
 
-			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(args[1]));
+        return false;
+    }
 
-		    System.err.println(Arrays.toString(m.m));
-			
-			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
-		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
-		    aes.init(true, ivAndKey);
-		    
-		    cipherData(aes, bis, oos);
-		    oos.flush();
-		    oos.close();
-		   
-			return true;
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (IOException e) {
-			System.err.println(e.getMessage());
-		} catch (ClassNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (DataLengthException e) {
-			System.err.println(e.getMessage());
-		} catch (IllegalStateException e) {
-			System.err.println(e.getMessage());
-		} catch (InvalidCipherTextException e) {
-			System.err.println(e.getMessage());
-		}
-		return false;
-	}
+    // dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
+    private static boolean decrypt(String[] args) {
+        if (!args[0].equals("dec") || args.length < 6) return false;
 
-	private static void help() {
-		System.out.println("Syntax:");
-		System.out.println("gsetup <gpfile>");
-		System.out.println("asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>");
-		System.out.println("keygen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>");
-		System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
-		System.out.println("dec <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
-	}
+        try {
+            ObjectInputStream oIn = new ObjectInputStream(new FileInputStream(args[2]));
+            Ciphertext ct = (Ciphertext) oIn.readObject();
+
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
+            GlobalParameters gp = (GlobalParameters) ois.readObject();
+            ois.close();
+
+            PersonalKeys pks = new PersonalKeys(args[1]);
+
+            for (int i = 5; i < args.length; i++) {
+                ois = new ObjectInputStream(new FileInputStream(args[i]));
+                PersonalKey pk = (PersonalKey) ois.readObject();
+                System.err.println(pk.getAttribute());
+                ois.close();
+                pks.addKey(pk);
+            }
+
+            Message m = DCPABE.decrypt(ct, pks, gp);
+
+            System.err.println(Arrays.toString(m.m));
+
+            PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
+            CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192 / 8)), new byte[BLOCKSIZE]);
+            aes.init(false, ivAndKey);
+
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]));
+            cipherData(aes, oIn, bos);
+            bos.flush();
+            bos.close();
+            ois.close();
+
+            return true;
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (DataLengthException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalStateException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvalidCipherTextException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    private static void cipherData(PaddedBufferedBlockCipher cipher, InputStream is, OutputStream os) throws DataLengthException, IllegalStateException, InvalidCipherTextException, IOException {
+        byte[] inBuff = new byte[cipher.getBlockSize()];
+        byte[] outBuff = new byte[cipher.getOutputSize(inBuff.length)];
+        int nbytes;
+        while (-1 != (nbytes = is.read(inBuff, 0, inBuff.length))) {
+            int length1 = cipher.processBytes(inBuff, 0, nbytes, outBuff, 0);
+            os.write(outBuff, 0, length1);
+        }
+        nbytes = cipher.doFinal(outBuff, 0);
+        os.write(outBuff, 0, nbytes);
+    }
+
+    // enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>
+    @SuppressWarnings("unchecked")
+    private static boolean encrypt(String[] args) {
+        if (!args[0].equals("enc") || args.length < 6) return false;
+
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
+
+            GlobalParameters gp = (GlobalParameters) ois.readObject();
+            ois.close();
+
+            PublicKeys pks = new PublicKeys();
+
+            for (int i = 5; i < args.length; i++) {
+                ois = new ObjectInputStream(new FileInputStream(args[i]));
+                pks.subscribeAuthority((Map<String, PublicKey>) ois.readObject());
+            }
+
+            AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
+            arho.printPolicy();
+            System.out.println();
+            Message m = new Message();
+            Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
+
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[3]));
+            oos.writeObject(ct);
+
+            BufferedInputStream bis = new BufferedInputStream(new FileInputStream(args[1]));
+
+            System.err.println(Arrays.toString(m.m));
+
+            PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
+            CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192 / 8)), new byte[BLOCKSIZE]);
+            aes.init(true, ivAndKey);
+
+            cipherData(aes, bis, oos);
+            oos.flush();
+            oos.close();
+
+            return true;
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.err.println(e.getMessage());
+        } catch (DataLengthException e) {
+            System.err.println(e.getMessage());
+        } catch (IllegalStateException e) {
+            System.err.println(e.getMessage());
+        } catch (InvalidCipherTextException e) {
+            System.err.println(e.getMessage());
+        }
+        return false;
+    }
+
+    private static void help() {
+        System.out.println("Syntax:");
+        System.out.println("gsetup <gpfile>");
+        System.out.println("asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>");
+        System.out.println("keygen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>");
+        System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
+        System.out.println("dec <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
+    }
 }
