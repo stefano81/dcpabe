@@ -38,7 +38,7 @@ public class Testing {
 
         AccessStructure as = AccessStructure.buildFromPolicy("and a or d and b c");
 
-        Message message = new Message();
+        Message message = DCPABE.generateRandomMessage(gp);
         Ciphertext ct = DCPABE.encrypt(message, as, gp, publicKeys);
 
         Message dmessage = DCPABE.decrypt(ct, pkeys, gp);
@@ -64,7 +64,7 @@ public class Testing {
         pkeys.addKey(k_user_a);
         pkeys.addKey(k_user_d);
 
-        Message message = new Message();
+        Message message = DCPABE.generateRandomMessage(gp);
         Ciphertext ct = DCPABE.encrypt(message, as, gp, publicKeys);
 
         Message dMessage = DCPABE.decrypt(ct, pkeys, gp);
