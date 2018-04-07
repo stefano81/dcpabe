@@ -46,8 +46,9 @@ public class DCPABE {
 
         Pairing pairing = PairingFactory.getPairing(GP.getPairingParameters());
 
-        Element M = pairing.getGT().newRandomElement().getImmutable();
-        message.m = M.toBytes();
+        Element M = pairing.getGT().newZeroElement();
+        M.setFromBytes(message.m);
+        M = M.getImmutable();
 
         Element s = pairing.getZr().newRandomElement().getImmutable();
         Element eg1g1 = pairing.pairing(GP.getG1(), GP.getG1()).getImmutable();
@@ -169,4 +170,11 @@ public class DCPABE {
         return element.getImmutable();
     }
 
+    public static Message generateRandomMessage(GlobalParameters GP) {
+        Pairing pairing = PairingFactory.getPairing(GP.getPairingParameters());
+
+        Element M = pairing.getGT().newRandomElement().getImmutable();
+
+        return new Message(M.toBytes());
+    }
 }

@@ -166,7 +166,7 @@ public class DCPABETool {
 				ois.close();
 			}
 			
-			Message om = new Message();
+			Message om = DCPABE.generateRandomMessage(gp);
 			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
 			Ciphertext oct = DCPABE.encrypt(om, arho, gp, pubKeys);
 			
@@ -231,8 +231,6 @@ public class DCPABETool {
 
 			Message m = DCPABE.decrypt(ct, pks, gp);
 
-		    System.err.println(Arrays.toString(m.m));
-
 			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
 		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
 		    aes.init(false, ivAndKey);
@@ -283,9 +281,7 @@ public class DCPABETool {
 			}
 
 			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
-			arho.printPolicy();
-			System.out.println();
-			Message m = new Message();
+			Message m = DCPABE.generateRandomMessage(gp);
 			Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
 			
 			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[3]));
@@ -293,8 +289,6 @@ public class DCPABETool {
 
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(args[1]));
 
-		    System.err.println(Arrays.toString(m.m));
-			
 			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
 		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
 		    aes.init(true, ivAndKey);
@@ -305,7 +299,7 @@ public class DCPABETool {
 		   
 			return true;
 		} catch (IOException | DataLengthException | ClassNotFoundException | InvalidCipherTextException | IllegalStateException e) {
-			System.err.println(e.getMessage());
+			e.printStackTrace();
 		}
         return false;
 	}

@@ -1,6 +1,5 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,7 +16,6 @@ import static org.junit.Assert.assertEquals;
 public class TestCiphertext {
     private static GlobalParameters gp;
     private static AuthorityKeys authority;
-    private Message m;
     private AccessStructure arho;
     private PublicKeys pks;
 
@@ -29,7 +27,6 @@ public class TestCiphertext {
 
     @Before
     public void setUp() {
-        m = new Message();
         arho = AccessStructure.buildFromPolicy("and A or D and C B");
         pks = new PublicKeys();
         pks.subscribeAuthority(authority.getPublicKeys());
@@ -37,7 +34,7 @@ public class TestCiphertext {
 
     @Test
     public void testSerialization() throws Exception {
-        Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
+        Ciphertext ct = DCPABE.encrypt(DCPABE.generateRandomMessage(gp), arho, gp, pks);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);
 
