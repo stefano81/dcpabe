@@ -12,7 +12,7 @@ public class PersonalKeys {
 
     public PersonalKeys(String userID) {
         this.userID = userID;
-        personalKeys = new HashMap<String, PersonalKey>();
+        personalKeys = new HashMap<>();
     }
 
     public void addKey(PersonalKey pkey) {

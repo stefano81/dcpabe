@@ -60,26 +60,14 @@ public class DCPABETool {
         if (!args[0].equals("asetup") || args.length <= 5) return false;
 
 		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[2]));
-
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
+			GlobalParameters gp = Utility.readGlobalParameters(args[2]);
 
 			String[] subArgs = Arrays.copyOfRange(args, 5, args.length);
 
 			AuthorityKeys ak = DCPABE.authoritySetup(args[1], gp, subArgs);
 
-			ObjectOutputStream oos =  new ObjectOutputStream(new FileOutputStream(args[3]));
-			//oos.writeObject(ak.getAuthorityID());
-			oos.writeObject(ak.getSecretKeys());
-			oos.flush();
-			oos.close();
-
-			oos = new ObjectOutputStream(new FileOutputStream(args[4]));
-			//oos.writeObject(ak.getAuthorityID());
-			oos.writeObject(ak.getPublicKeys());
-			oos.flush();
-			oos.close();
+			Utility.writeSecretKeys(args[3], ak.getSecretKeys());
+			Utility.writePublicKeys(args[4], ak.getPublicKeys());
 
             return true;
         } catch (ClassNotFoundException | IOException e) {
@@ -94,11 +82,9 @@ public class DCPABETool {
 		if (!args[0].equals("keyGen") || args.length != 6) return false;
 
 		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[3]));
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
+			GlobalParameters gp = Utility.readGlobalParameters(args[3]);
 
-			ois = new ObjectInputStream(new FileInputStream(args[4]));
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
 			@SuppressWarnings("unchecked")
 			Map<String, SecretKey> skeys = (Map<String, SecretKey>) ois.readObject();
 			ois.close();
@@ -215,14 +201,12 @@ public class DCPABETool {
 			ObjectInputStream oIn = new ObjectInputStream(new FileInputStream(args[2]));
 			Ciphertext ct = (Ciphertext) oIn.readObject();
 
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
+			GlobalParameters gp = Utility.readGlobalParameters(args[4]);
 
 			PersonalKeys pks = new PersonalKeys(args[1]);
 
 			for (int i = 5; i < args.length; i++) {
-				ois = new ObjectInputStream(new FileInputStream(args[i]));
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[i]));
 				PersonalKey pk = (PersonalKey) ois.readObject();
 				System.err.println(pk.getAttribute());
 				ois.close();
@@ -239,7 +223,6 @@ public class DCPABETool {
 		    cipherData(aes, oIn, bos);
 		    bos.flush();
 		    bos.close();
-		    ois.close();
 
 			return true;
 		} catch (IOException | ClassNotFoundException | DataLengthException | IllegalStateException | InvalidCipherTextException e) {
@@ -268,15 +251,12 @@ public class DCPABETool {
 		if (!args[0].equals("enc") || args.length < 6) return false;
 
 		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
-
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
+			GlobalParameters gp = Utility.readGlobalParameters(args[4]);
 
 			PublicKeys pks = new PublicKeys();
 
 			for (int i = 5; i < args.length; i++) {
-				ois = new ObjectInputStream(new FileInputStream(args[i]));
+				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[i]));
 				pks.subscribeAuthority((Map<String, PublicKey>) ois.readObject());
 			}
 
@@ -312,4 +292,26 @@ public class DCPABETool {
 		System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
 		System.out.println("dec <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
 	}
+
+    private static class Utility {
+        private static GlobalParameters readGlobalParameters(String globalParametersPath) throws IOException, ClassNotFoundException {
+            try (ObjectInputStream inputGlobalParameters = new ObjectInputStream(new FileInputStream(globalParametersPath))) {
+                return (GlobalParameters) inputGlobalParameters.readObject();
+            }
+        }
+
+        private static void writePublicKeys(String publicKeysPath, Map<String, PublicKey> publicKeys) throws IOException {
+            try (ObjectOutputStream outputPublicKey = new ObjectOutputStream(new FileOutputStream(publicKeysPath))) {
+                //oos.writeObject(ak.getAuthorityID());
+                outputPublicKey.writeObject(publicKeys);
+            }
+        }
+
+        private static void writeSecretKeys(String secretKeyPath, Map<String, SecretKey> secretKeys) throws IOException {
+            try (ObjectOutputStream outputSecretKey = new ObjectOutputStream(new FileOutputStream(secretKeyPath))) {
+                //oos.writeObject(ak.getAuthorityID());
+                outputSecretKey.writeObject(secretKeys);
+            }
+        }
+    }
 }
