@@ -109,13 +109,9 @@ public class DCPABETool {
 		if (!args[0].equals("gsetup") || args.length != 2) return false;
 
 		try {
-			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[1]));
-
 			GlobalParameters gp = DCPABE.globalSetup(160);
 
-			oos.writeObject(gp);
-			oos.flush();
-			oos.close();
+			Utility.writeGlobalParameters(args[1], gp);
 
 			return true;
 		} catch (FileNotFoundException e) {
@@ -318,6 +314,12 @@ public class DCPABETool {
         private static void writePersonalKey(String personalKeyPath, PersonalKey personalKey) throws IOException {
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(personalKeyPath))) {
                 oos.writeObject(personalKey);
+            }
+        }
+
+        private static void writeGlobalParameters(String globalParameterPath, GlobalParameters globalParameters) throws IOException {
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(globalParameterPath))) {
+                oos.writeObject(globalParameters);
             }
         }
     }
