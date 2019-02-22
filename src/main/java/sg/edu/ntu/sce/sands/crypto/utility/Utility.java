@@ -70,7 +70,9 @@ public class Utility {
     }
 
     public static void writeGlobalParameters(String globalParameterPath, GlobalParameters globalParameters) throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(globalParameterPath))) {
+        try (
+                FileOutputStream fos = new FileOutputStream(globalParameterPath);
+                ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(globalParameters);
         }
     }
