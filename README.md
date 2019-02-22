@@ -1,5 +1,7 @@
 Decentralized CP-ABE
 ======
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/stefano81/dcpabe.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/stefano81/dcpabe/alerts/)
+
 This software implements the Decentralized CiphertextPolicy Attribute Based Encryption schema described in [1].
 The code depends on the jPBC library [2] and the BouncyCastle library.
 

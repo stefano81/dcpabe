@@ -1,5 +1,7 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +12,7 @@ public class PersonalKeys {
 
     public PersonalKeys(String userID) {
         this.userID = userID;
-        personalKeys = new HashMap<String, PersonalKey>();
+        personalKeys = new HashMap<>();
     }
 
     public void addKey(PersonalKey pkey) {

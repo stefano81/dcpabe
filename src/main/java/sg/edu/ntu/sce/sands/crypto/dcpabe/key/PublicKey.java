@@ -1,4 +1,4 @@
-package sg.edu.ntu.sce.sands.crypto.dcpabe;
+package sg.edu.ntu.sce.sands.crypto.dcpabe.key;
 
 import java.io.Serializable;
 

@@ -7,6 +7,7 @@ import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Objects;
 
 
 public class GlobalParameters implements Serializable {
@@ -44,14 +45,17 @@ public class GlobalParameters implements Serializable {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (null != obj)
-            if (obj instanceof GlobalParameters) {
-                GlobalParameters other = (GlobalParameters) obj;
-                if (pairingParameters.equals(other.pairingParameters))
-                    return g1.isEqual(other.g1);
-            }
-        return false;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        GlobalParameters that = (GlobalParameters) o;
+        return Objects.equals(pairingParameters, that.pairingParameters) &&
+                Objects.equals(g1, that.g1);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pairingParameters, g1);
     }
 
     @Override
