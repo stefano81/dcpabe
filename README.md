@@ -1,6 +1,6 @@
 Decentralized CP-ABE
 ======
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/stefano81/dcpabe.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/stefano81/dcpabe/alerts/)
+[![Build Status](https://travis-ci.org/stefano81/dcpabe.svg?branch=master)](https://travis-ci.org/stefano81/dcpabe)[![Total alerts](https://img.shields.io/lgtm/alerts/g/stefano81/dcpabe.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/stefano81/dcpabe/alerts/)
 
 This software implements the Decentralized CiphertextPolicy Attribute Based Encryption schema described in [1].
 The code depends on the jPBC library [2] and the BouncyCastle library.
@@ -12,4 +12,4 @@ The software is a result of the PriSM project [3] developed by the SANDS [4] tea
 2. A. DeCaro, "The Java Pairing Based Cryptography Library", http://gas.dia.unisa.it/projects/jpbc/
 3. PriSM, http://sands.sce.ntu.edu.sg/PriSM
 4. SANDS, http://sands.sce.ntu.edu.sg/
-4. Nanayang Technological University, http://www.ntu.edu.sg/
+5. Nanayang Technological University, http://www.ntu.edu.sg/
