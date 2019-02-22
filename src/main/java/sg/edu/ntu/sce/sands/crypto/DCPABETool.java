@@ -104,50 +104,42 @@ public class DCPABETool {
 		if (!args[0].equals("check") || args.length < 8) return false;
 
 		try {
-			GlobalParameters gp = Utility.readGlobalParameters(args[3]);
+            GlobalParameters gp = Utility.readGlobalParameters(args[3]);
 
-			PublicKeys pubKeys = new PublicKeys();
-			
-			int m = Integer.parseInt(args[4]);
-			for (int i = 0; i < m; i++) {
-				pubKeys.subscribeAuthority(Utility.readPublicKeys(args[4+i+1]));
-			}
-			
-			Message om = DCPABE.generateRandomMessage(gp);
-			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
-			Ciphertext oct = DCPABE.encrypt(om, arho, gp, pubKeys);
-			
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			ObjectOutputStream oos = new ObjectOutputStream(baos);
-			oos.writeObject(oct);
-			oos.flush();
-			oos.close();
-			
-			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
-			Ciphertext nct = (Ciphertext) ois.readObject();
+            PublicKeys pubKeys = new PublicKeys();
 
-			arho.printPolicy();
-			
-			PersonalKeys pks = new PersonalKeys(args[1]);
-			
-			int n = Integer.parseInt(args[4+m+1]);
-			for (int i = 0; i < n; i++) {
-				ois = new ObjectInputStream(new FileInputStream(args[4+i+m+2]));
-				PersonalKey pk = (PersonalKey) ois.readObject();
-				System.err.println(pk.getAttribute());
-				pks.addKey(pk);
-				ois.close();
-			}
-			
-			Message dm = DCPABE.decrypt(nct, pks, gp);
+            int m = Integer.parseInt(args[4]);
+            for (int i = 0; i < m; i++) {
+                pubKeys.subscribeAuthority(Utility.readPublicKeys(args[4 + i + 1]));
+            }
 
-			System.err.println(om.m.length);
-			System.err.println(dm.m.length);
-			System.err.println(Arrays.toString(om.m));
-			System.err.println(Arrays.toString(dm.m));
-			
-			return true;
-		} catch (IllegalStateException | IOException | DataLengthException | ClassNotFoundException e) {
+            Message om = DCPABE.generateRandomMessage(gp);
+            AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
+            Ciphertext oct = DCPABE.encrypt(om, arho, gp, pubKeys);
+
+            byte[] cipherAsBytes = Utility.toBytes(oct);
+            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(cipherAsBytes))) {
+                Ciphertext nct = (Ciphertext) ois.readObject();
+
+                arho.printPolicy();
+
+                PersonalKeys pks = new PersonalKeys(args[1]);
+
+                int n = Integer.parseInt(args[4 + m + 1]);
+                for (int i = 0; i < n; i++) {
+                    pks.addKey(Utility.readPersonalKey(args[4 + i + m + 2]));
+                }
+
+                Message dm = DCPABE.decrypt(nct, pks, gp);
+
+                System.err.println(om.m.length);
+                System.err.println(dm.m.length);
+                System.err.println(Arrays.toString(om.m));
+                System.err.println(Arrays.toString(dm.m));
+
+                return true;
+            }
+        } catch (IllegalStateException | IOException | DataLengthException | ClassNotFoundException e) {
 			System.err.println(e.getMessage());
 		}
 
@@ -173,10 +165,10 @@ public class DCPABETool {
 
             PaddedBufferedBlockCipher aes = Utility.initializeAES(m.m, false);
 
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]));
-            encryptOrDecryptPayload(aes, oIn, bos);
-            bos.flush();
-            bos.close();
+            try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]))) {
+                encryptOrDecryptPayload(aes, oIn, bos);
+                bos.flush();
+            }
 
             return true;
         } catch (IOException | ClassNotFoundException | DataLengthException | IllegalStateException | InvalidCipherTextException e) {

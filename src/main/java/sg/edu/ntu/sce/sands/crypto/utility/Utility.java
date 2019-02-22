@@ -88,4 +88,14 @@ public class Utility {
     public static Ciphertext readCiphertext(ObjectInputStream input) throws IOException, ClassNotFoundException {
         return (Ciphertext) input.readObject();
     }
+
+    public static byte[] toBytes(Ciphertext oct) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            try (ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                oos.writeObject(oct);
+            }
+
+            return  baos.toByteArray();
+        }
+    }
 }
