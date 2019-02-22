@@ -84,10 +84,8 @@ public class DCPABETool {
 		try {
 			GlobalParameters gp = Utility.readGlobalParameters(args[3]);
 
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[4]));
-			@SuppressWarnings("unchecked")
-			Map<String, SecretKey> skeys = (Map<String, SecretKey>) ois.readObject();
-			ois.close();
+			Map<String, SecretKey> skeys = Utility.readSecretKeys(args[4]);
+
 			SecretKey sk = skeys.get(args[2]);
 
 			if (null == sk) {
@@ -96,11 +94,7 @@ public class DCPABETool {
 			}
 
 			PersonalKey pk = DCPABE.keyGen(args[1], args[2], sk, gp);
-
-			ObjectOutputStream oos =  new ObjectOutputStream(new FileOutputStream(args[5]));
-			oos.writeObject(pk);
-			oos.flush();
-			oos.close();
+            Utility.writePersonalKey(args[5], pk);
 
 			return true;
 		} catch (ClassNotFoundException | IOException e) {
@@ -293,6 +287,7 @@ public class DCPABETool {
 		System.out.println("dec <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
 	}
 
+	@SuppressWarnings("unchecked")
     private static class Utility {
         private static GlobalParameters readGlobalParameters(String globalParametersPath) throws IOException, ClassNotFoundException {
             try (ObjectInputStream inputGlobalParameters = new ObjectInputStream(new FileInputStream(globalParametersPath))) {
@@ -311,6 +306,18 @@ public class DCPABETool {
             try (ObjectOutputStream outputSecretKey = new ObjectOutputStream(new FileOutputStream(secretKeyPath))) {
                 //oos.writeObject(ak.getAuthorityID());
                 outputSecretKey.writeObject(secretKeys);
+            }
+        }
+
+        private static Map<String, SecretKey> readSecretKeys(String secretKeysPath) throws IOException, ClassNotFoundException {
+            try (ObjectInputStream secretKeys = new ObjectInputStream(new FileInputStream(secretKeysPath))) {
+                return (Map<String, SecretKey>) secretKeys.readObject();
+            }
+        }
+
+        private static void writePersonalKey(String personalKeyPath, PersonalKey personalKey) throws IOException {
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(personalKeyPath))) {
+                oos.writeObject(personalKey);
             }
         }
     }
