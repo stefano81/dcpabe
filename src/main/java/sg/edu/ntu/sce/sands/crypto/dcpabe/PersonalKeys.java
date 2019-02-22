@@ -1,5 +1,7 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;

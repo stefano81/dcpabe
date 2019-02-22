@@ -6,6 +6,9 @@ import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a1.TypeA1CurveGenerator;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure.MatrixElement;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
 
 import java.util.ArrayList;
 import java.util.List;

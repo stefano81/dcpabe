@@ -31,11 +31,11 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.SecretKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 
 public class DCPABETool {
