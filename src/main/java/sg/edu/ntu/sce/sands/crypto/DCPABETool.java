@@ -33,10 +33,10 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKeys;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
+import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 public class DCPABETool {
 	private static int BLOCKSIZE = 16;
@@ -129,17 +129,13 @@ public class DCPABETool {
 		if (!args[0].equals("check") || args.length < 8) return false;
 
 		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[3]));
-			GlobalParameters gp = (GlobalParameters) ois.readObject();
-			ois.close();
-			
+			GlobalParameters gp = Utility.readGlobalParameters(args[3]);
+
 			PublicKeys pubKeys = new PublicKeys();
 			
 			int m = Integer.parseInt(args[4]);
 			for (int i = 0; i < m; i++) {
-				ois = new ObjectInputStream(new FileInputStream(args[4+i+1]));
-				pubKeys.subscribeAuthority((Map<String, PublicKey>) ois.readObject());
-				ois.close();
+				pubKeys.subscribeAuthority(Utility.readPublicKeys(args[4+i+1]));
 			}
 			
 			Message om = DCPABE.generateRandomMessage(gp);
@@ -152,7 +148,7 @@ public class DCPABETool {
 			oos.flush();
 			oos.close();
 			
-			ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+			ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
 			Ciphertext nct = (Ciphertext) ois.readObject();
 
 			arho.printPolicy();
@@ -246,8 +242,7 @@ public class DCPABETool {
 			PublicKeys pks = new PublicKeys();
 
 			for (int i = 5; i < args.length; i++) {
-				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[i]));
-				pks.subscribeAuthority((Map<String, PublicKey>) ois.readObject());
+				pks.subscribeAuthority(Utility.readPublicKeys(args[i]));
 			}
 
 			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
@@ -282,45 +277,4 @@ public class DCPABETool {
 		System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
 		System.out.println("dec <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
 	}
-
-	@SuppressWarnings("unchecked")
-    private static class Utility {
-        private static GlobalParameters readGlobalParameters(String globalParametersPath) throws IOException, ClassNotFoundException {
-            try (ObjectInputStream inputGlobalParameters = new ObjectInputStream(new FileInputStream(globalParametersPath))) {
-                return (GlobalParameters) inputGlobalParameters.readObject();
-            }
-        }
-
-        private static void writePublicKeys(String publicKeysPath, Map<String, PublicKey> publicKeys) throws IOException {
-            try (ObjectOutputStream outputPublicKey = new ObjectOutputStream(new FileOutputStream(publicKeysPath))) {
-                //oos.writeObject(ak.getAuthorityID());
-                outputPublicKey.writeObject(publicKeys);
-            }
-        }
-
-        private static void writeSecretKeys(String secretKeyPath, Map<String, SecretKey> secretKeys) throws IOException {
-            try (ObjectOutputStream outputSecretKey = new ObjectOutputStream(new FileOutputStream(secretKeyPath))) {
-                //oos.writeObject(ak.getAuthorityID());
-                outputSecretKey.writeObject(secretKeys);
-            }
-        }
-
-        private static Map<String, SecretKey> readSecretKeys(String secretKeysPath) throws IOException, ClassNotFoundException {
-            try (ObjectInputStream secretKeys = new ObjectInputStream(new FileInputStream(secretKeysPath))) {
-                return (Map<String, SecretKey>) secretKeys.readObject();
-            }
-        }
-
-        private static void writePersonalKey(String personalKeyPath, PersonalKey personalKey) throws IOException {
-            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(personalKeyPath))) {
-                oos.writeObject(personalKey);
-            }
-        }
-
-        private static void writeGlobalParameters(String globalParameterPath, GlobalParameters globalParameters) throws IOException {
-            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(globalParameterPath))) {
-                oos.writeObject(globalParameters);
-            }
-        }
-    }
 }
