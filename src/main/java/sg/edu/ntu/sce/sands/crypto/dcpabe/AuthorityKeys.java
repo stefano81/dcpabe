@@ -1,5 +1,8 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
