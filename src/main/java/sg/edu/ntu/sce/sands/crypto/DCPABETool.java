@@ -1,46 +1,21 @@
 package sg.edu.ntu.sce.sands.crypto;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import org.bouncycastle.crypto.DataLengthException;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.*;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
+import sg.edu.ntu.sce.sands.crypto.utility.Utility;
+
+import java.io.*;
 import java.security.Security;
 import java.util.Arrays;
 import java.util.Map;
 
-import org.bouncycastle.crypto.CipherParameters;
-import org.bouncycastle.crypto.DataLengthException;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.engines.AESEngine;
-import org.bouncycastle.crypto.modes.CBCBlockCipher;
-import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
-import org.bouncycastle.crypto.params.KeyParameter;
-import org.bouncycastle.crypto.params.ParametersWithIV;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
-import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKeys;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
-import sg.edu.ntu.sce.sands.crypto.utility.Utility;
-
 public class DCPABETool {
-	private static int BLOCKSIZE = 16;
-
 	public static void main(String[] args) {
 		Security.addProvider(new BouncyCastleProvider());
 		
@@ -180,46 +155,39 @@ public class DCPABETool {
 	}
 
 	// dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
-	private static boolean decrypt(String[] args) {
-		if (!args[0].equals("dec") || args.length < 6) return false;
+    private static boolean decrypt(String[] args) {
+        if (!args[0].equals("dec") || args.length < 6) return false;
 
-		try {
-			ObjectInputStream oIn = new ObjectInputStream(new FileInputStream(args[2]));
-			Ciphertext ct = (Ciphertext) oIn.readObject();
+        try (ObjectInputStream oIn = new ObjectInputStream(new FileInputStream(args[2]))) {
+            GlobalParameters gp = Utility.readGlobalParameters(args[4]);
 
-			GlobalParameters gp = Utility.readGlobalParameters(args[4]);
+            PersonalKeys pks = new PersonalKeys(args[1]);
 
-			PersonalKeys pks = new PersonalKeys(args[1]);
+            for (int i = 5; i < args.length; i++) {
+//				System.err.println(pk.getAttribute());
+                pks.addKey(Utility.readPersonalKey(args[i]));
+            }
 
-			for (int i = 5; i < args.length; i++) {
-				ObjectInputStream ois = new ObjectInputStream(new FileInputStream(args[i]));
-				PersonalKey pk = (PersonalKey) ois.readObject();
-				System.err.println(pk.getAttribute());
-				ois.close();
-				pks.addKey(pk);
-			}
+            Ciphertext ct = Utility.readCiphertext(oIn);
+            Message m = DCPABE.decrypt(ct, pks, gp);
 
-			Message m = DCPABE.decrypt(ct, pks, gp);
+            PaddedBufferedBlockCipher aes = Utility.initializeAES(m.m, false);
 
-			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
-		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
-		    aes.init(false, ivAndKey);
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]));
+            encryptOrDecryptPayload(aes, oIn, bos);
+            bos.flush();
+            bos.close();
 
-		    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]));
-		    cipherData(aes, oIn, bos);
-		    bos.flush();
-		    bos.close();
-
-			return true;
-		} catch (IOException | ClassNotFoundException | DataLengthException | IllegalStateException | InvalidCipherTextException e) {
-			System.err.println(e.getMessage());
+            return true;
+        } catch (IOException | ClassNotFoundException | DataLengthException | IllegalStateException | InvalidCipherTextException e) {
+            System.err.println(e.getMessage());
             e.printStackTrace();
-		}
+        }
 
         return false;
     }
 
-    private static void cipherData(PaddedBufferedBlockCipher cipher, InputStream is, OutputStream os) throws DataLengthException, IllegalStateException, InvalidCipherTextException, IOException {
+    private static void encryptOrDecryptPayload(PaddedBufferedBlockCipher cipher, InputStream is, OutputStream os) throws DataLengthException, IllegalStateException, InvalidCipherTextException, IOException {
         byte[] inBuff = new byte[cipher.getBlockSize()];
         byte[] outBuff = new byte[cipher.getOutputSize(inBuff.length)];
         int nbytes;
@@ -254,11 +222,9 @@ public class DCPABETool {
 
 			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(args[1]));
 
-			PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
-		    CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(m.m, 0, 192/8)), new byte[BLOCKSIZE]);
-		    aes.init(true, ivAndKey);
+			PaddedBufferedBlockCipher aes = Utility.initializeAES(m.m, true);
 		    
-		    cipherData(aes, bis, oos);
+		    encryptOrDecryptPayload(aes, bis, oos);
 		    oos.flush();
 		    oos.close();
 		   

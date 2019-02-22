@@ -1,11 +1,19 @@
 package sg.edu.ntu.sce.sands.crypto.utility;
 
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.modes.CBCBlockCipher;
+import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
+import org.bouncycastle.crypto.params.KeyParameter;
+import org.bouncycastle.crypto.params.ParametersWithIV;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Map;
 
 /*******************************************************************
@@ -67,5 +75,17 @@ public class Utility {
         try (ObjectInputStream personalKey = new ObjectInputStream(new FileInputStream(personalKeyPath))) {
             return (PersonalKey) personalKey.readObject();
         }
+    }
+
+    public static PaddedBufferedBlockCipher initializeAES(byte[] key, boolean encrypt) {
+        PaddedBufferedBlockCipher aes = new PaddedBufferedBlockCipher(new CBCBlockCipher(new AESEngine()));
+        int BLOCKSIZE = 16;
+        CipherParameters ivAndKey = new ParametersWithIV(new KeyParameter(Arrays.copyOfRange(key, 0, 192 / 8)), new byte[BLOCKSIZE]);
+        aes.init(encrypt, ivAndKey);
+        return aes;
+    }
+
+    public static Ciphertext readCiphertext(ObjectInputStream input) throws IOException, ClassNotFoundException {
+        return (Ciphertext) input.readObject();
     }
 }
