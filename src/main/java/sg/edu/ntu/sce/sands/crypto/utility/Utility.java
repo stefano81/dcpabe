@@ -34,27 +34,37 @@ public class Utility {
     }
 
     public static void writePublicKeys(String publicKeysPath, Map<String, PublicKey> publicKeys) throws IOException {
-        try (ObjectOutputStream outputPublicKey = new ObjectOutputStream(new FileOutputStream(publicKeysPath))) {
+        try (
+                FileOutputStream fos = new FileOutputStream(publicKeysPath);
+                ObjectOutputStream outputPublicKey = new ObjectOutputStream(fos)) {
             //oos.writeObject(ak.getAuthorityID());
             outputPublicKey.writeObject(publicKeys);
         }
+
     }
 
     public static void writeSecretKeys(String secretKeyPath, Map<String, SecretKey> secretKeys) throws IOException {
-        try (ObjectOutputStream outputSecretKey = new ObjectOutputStream(new FileOutputStream(secretKeyPath))) {
+        try (
+                FileOutputStream fos = new FileOutputStream(secretKeyPath);
+                ObjectOutputStream outputSecretKey = new ObjectOutputStream(fos)) {
             //oos.writeObject(ak.getAuthorityID());
             outputSecretKey.writeObject(secretKeys);
         }
+
     }
 
     public static Map<String, SecretKey> readSecretKeys(String secretKeysPath) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream secretKeys = new ObjectInputStream(new FileInputStream(secretKeysPath))) {
+        try (
+                FileInputStream fis = new FileInputStream(secretKeysPath);
+                ObjectInputStream secretKeys = new ObjectInputStream(fis)) {
             return (Map<String, SecretKey>) secretKeys.readObject();
         }
     }
 
     public static void writePersonalKey(String personalKeyPath, PersonalKey personalKey) throws IOException {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(personalKeyPath))) {
+        try (
+                FileOutputStream fos = new FileOutputStream(personalKeyPath);
+                ObjectOutputStream oos = new ObjectOutputStream(fos)) {
             oos.writeObject(personalKey);
         }
     }
