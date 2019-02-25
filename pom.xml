@@ -45,9 +45,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.github.emilianobonassi</groupId>
+            <groupId>com.github.stefano81</groupId>
             <artifactId>jpbc</artifactId>
-            <version>v2.0.0</version>
+            <version>v2.0.0-m</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
