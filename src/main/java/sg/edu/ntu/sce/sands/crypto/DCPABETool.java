@@ -118,7 +118,10 @@ public class DCPABETool {
             Ciphertext oct = DCPABE.encrypt(om, arho, gp, pubKeys);
 
             byte[] cipherAsBytes = Utility.toBytes(oct);
-            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(cipherAsBytes))) {
+            try (
+            		ByteArrayInputStream input = new ByteArrayInputStream(cipherAsBytes);
+            		ObjectInputStream ois = new ObjectInputStream(input)
+			) {
                 Ciphertext nct = (Ciphertext) ois.readObject();
 
                 arho.printPolicy();
@@ -150,7 +153,10 @@ public class DCPABETool {
     private static boolean decrypt(String[] args) {
         if (!args[0].equals("dec") || args.length < 6) return false;
 
-        try (ObjectInputStream oIn = new ObjectInputStream(new FileInputStream(args[2]))) {
+        try (
+        		FileInputStream input = new FileInputStream(args[2]);
+        		ObjectInputStream oIn = new ObjectInputStream(input)
+		) {
             GlobalParameters gp = Utility.readGlobalParameters(args[4]);
 
             PersonalKeys pks = new PersonalKeys(args[1]);
@@ -209,18 +215,22 @@ public class DCPABETool {
 			Message m = DCPABE.generateRandomMessage(gp);
 			Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
 			
-			ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(args[3]));
-			oos.writeObject(ct);
+			try (
+					FileOutputStream fos = new FileOutputStream(args[3]);
+					ObjectOutputStream oos = new ObjectOutputStream(fos);
 
-			BufferedInputStream bis = new BufferedInputStream(new FileInputStream(args[1]));
+					FileInputStream fis = new FileInputStream(args[1]);
+					BufferedInputStream bis = new BufferedInputStream(fis);
+			) {
+				oos.writeObject(ct);
 
-			PaddedBufferedBlockCipher aes = Utility.initializeAES(m.m, true);
-		    
-		    encryptOrDecryptPayload(aes, bis, oos);
-		    oos.flush();
-		    oos.close();
-		   
-			return true;
+				PaddedBufferedBlockCipher aes = Utility.initializeAES(m.m, true);
+
+				encryptOrDecryptPayload(aes, bis, oos);
+
+				return true;
+
+			}
 		} catch (IOException | DataLengthException | ClassNotFoundException | InvalidCipherTextException | IllegalStateException e) {
 			e.printStackTrace();
 		}
