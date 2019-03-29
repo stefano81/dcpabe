@@ -10,6 +10,6 @@ The software is a result of the PriSM project [3] developed by the SANDS [4] tea
 ### References ###
 1. A. Lewko and B. Waters, "Decentralizing Attribute-Based Encryption", Cryptology ePrint Archive, Report 2010/351.
 2. A. DeCaro, "The Java Pairing Based Cryptography Library", http://gas.dia.unisa.it/projects/jpbc/
-3. PriSM, http://sands.sce.ntu.edu.sg/PriSM
+3. S. Braghin, J. Tan Teck Yong, R. Sharma and A. Datta: "PriSM: A Private Social Mesh for Leveraging Social Networking at Workplace". CoRR abs/1206.1653 (2012)
 4. SANDS, http://sands.sce.ntu.edu.sg/
 5. Nanayang Technological University, http://www.ntu.edu.sg/
