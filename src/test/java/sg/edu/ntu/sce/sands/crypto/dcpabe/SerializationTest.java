@@ -56,7 +56,7 @@ public class SerializationTest {
         AccessStructure deserialized = mapper.readValue(serializedValue, AccessStructure.class);
 
         assertNotNull(deserialized);
-        assertThat(ac, equalTo(deserialized));
+        assertThat(ac.toString(), equalTo(deserialized.toString()));
     }
 
     @Test
