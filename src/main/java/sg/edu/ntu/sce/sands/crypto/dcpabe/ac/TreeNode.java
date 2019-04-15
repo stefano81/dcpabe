@@ -48,8 +48,6 @@ public abstract class TreeNode implements Serializable {
                 return false;
         } else if (!label.equals(other.label))
             return false;
-        if (sat != other.sat)
-            return false;
-        return true;
+        return sat == other.sat;
     }
 }

@@ -135,10 +135,10 @@ public class DCPABETool {
 
                 Message dm = DCPABE.decrypt(nct, pks, gp);
 
-                System.err.println(om.m.length);
-                System.err.println(dm.m.length);
-                System.err.println(Arrays.toString(om.m));
-                System.err.println(Arrays.toString(dm.m));
+                System.err.println(om.getM().length);
+                System.err.println(dm.getM().length);
+                System.err.println(Arrays.toString(om.getM()));
+                System.err.println(Arrays.toString(dm.getM()));
 
                 return true;
             }
@@ -169,7 +169,7 @@ public class DCPABETool {
             Ciphertext ct = Utility.readCiphertext(oIn);
             Message m = DCPABE.decrypt(ct, pks, gp);
 
-            PaddedBufferedBlockCipher aes = Utility.initializeAES(m.m, false);
+            PaddedBufferedBlockCipher aes = Utility.initializeAES(m.getM(), false);
 
             try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]))) {
                 encryptOrDecryptPayload(aes, oIn, bos);
@@ -224,7 +224,7 @@ public class DCPABETool {
 			) {
 				oos.writeObject(ct);
 
-				PaddedBufferedBlockCipher aes = Utility.initializeAES(m.m, true);
+                PaddedBufferedBlockCipher aes = Utility.initializeAES(m.getM(), true);
 
 				encryptOrDecryptPayload(aes, bis, oos);
 

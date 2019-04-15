@@ -50,7 +50,7 @@ public class DCPABE {
         Pairing pairing = PairingFactory.getPairing(GP.getPairingParameters());
 
         Element M = pairing.getGT().newZeroElement();
-        M.setFromBytes(message.m);
+        M.setFromBytes(message.getM());
         M = M.getImmutable();
 
         Element s = pairing.getZr().newRandomElement().getImmutable();

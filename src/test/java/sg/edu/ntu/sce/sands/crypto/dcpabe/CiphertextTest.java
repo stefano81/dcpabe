@@ -13,7 +13,7 @@ import java.io.ObjectOutputStream;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class TestCiphertext {
+public class CiphertextTest {
     private static GlobalParameters gp;
     private static AuthorityKeys authority;
     private AccessStructure arho;

@@ -10,7 +10,6 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -42,7 +41,7 @@ public class Testing {
 
         Message dmessage = DCPABE.decrypt(ct, pkeys, gp);
 
-        assertArrayEquals(message.m, dmessage.m);
+        assertArrayEquals(message.getM(), dmessage.getM());
     }
 
 
@@ -68,10 +67,10 @@ public class Testing {
 
         Message dMessage = DCPABE.decrypt(ct, pkeys, gp);
 
-        System.out.println("M(" + message.m.length + ") = " + Arrays.toString(message.m));
-        System.out.println("DM(" + dMessage.m.length + ") = " + Arrays.toString(dMessage.m));
+        System.out.println("M(" + message.getM().length + ") = " + Arrays.toString(message.getM()));
+        System.out.println("DM(" + dMessage.getM().length + ") = " + Arrays.toString(dMessage.getM()));
 
-        assertArrayEquals(message.m, dMessage.m);
+        assertArrayEquals(message.getM(), dMessage.getM());
     }
 
     @Test
@@ -79,10 +78,6 @@ public class Testing {
         AccessStructure as1 = AccessStructure.buildFromPolicy("and a or d and b c");
         as1.printPolicy();
         as1.printMatrix();
-
-        ArrayList<String> attributes = new ArrayList<>();
-        attributes.add("a");
-        attributes.add("d");
 
         AccessStructure as2 = AccessStructure.buildFromPolicy("and or d and b c a");
         as2.printPolicy();
