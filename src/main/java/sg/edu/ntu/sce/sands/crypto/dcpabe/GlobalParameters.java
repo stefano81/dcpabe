@@ -1,5 +1,9 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.jpbc.PairingParameters;
@@ -9,7 +13,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Objects;
 
-
+@JsonSerialize(using = GlobalParameters.Serializer.class)
 public class GlobalParameters implements Serializable {
     private static final long serialVersionUID = 1L;
     private PairingParameters pairingParameters;
@@ -61,5 +65,21 @@ public class GlobalParameters implements Serializable {
     @Override
     public String toString() {
         return pairingParameters.toString() + g1.toString();
+    }
+
+    static class Serializer extends JsonSerializer {
+        public Serializer() {
+        }
+
+        @Override
+        public void serialize(Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+            GlobalParameters gp = (GlobalParameters) o;
+
+            jsonGenerator.writeStartObject();
+
+            jsonGenerator.writeObjectField("pairingParameters", gp.pairingParameters.toString());
+            jsonGenerator.writeBinaryField("g1", gp.g1.toBytes());
+            jsonGenerator.writeEndObject();
+        }
     }
 }

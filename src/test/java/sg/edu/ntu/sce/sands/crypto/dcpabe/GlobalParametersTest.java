@@ -1,7 +1,5 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -9,17 +7,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
-public class TestGP {
-
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
-    }
+public class GlobalParametersTest {
 
     @Test
     public void testSerialization() throws Exception {
@@ -37,7 +27,7 @@ public class TestGP {
         ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
         GlobalParameters gp1 = (GlobalParameters) ois.readObject();
 
-        assertTrue(gp.equals(gp1));
+        assertEquals(gp, gp1);
     }
 
 }

@@ -11,7 +11,7 @@ import java.io.IOException;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
-public class TestDCPABETool {
+public class DCPABEToolTest {
     private static File gpFile;
     private static File resFile;
 
@@ -30,7 +30,7 @@ public class TestDCPABETool {
         String[] args = {"gsetup", gpFile.getAbsolutePath()};
         DCPABETool.main(args);
 
-        resFile = new File(TestDCPABETool.class.getResource("/testResource.txt").toURI());
+        resFile = new File(DCPABEToolTest.class.getResource("/testResource.txt").toURI());
     }
 
     @Before

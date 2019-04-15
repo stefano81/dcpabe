@@ -6,13 +6,13 @@ import java.util.*;
 public class AccessStructure implements Serializable {
     private static final long serialVersionUID = 1L;
     private Map<Integer, String> rho;
-    private Vector<Vector<MatrixElement>> A;
+    private List<List<MatrixElement>> A;
     private TreeNode policyTree;
     private int partsIndex;
 
     private AccessStructure() {
-        A = new Vector<Vector<MatrixElement>>();
-        rho = new HashMap<Integer, String>();
+        A = new ArrayList<>();
+        rho = new HashMap<>();
     }
 
     public static AccessStructure buildFromPolicy(String policy) {
@@ -25,7 +25,7 @@ public class AccessStructure implements Serializable {
         return aRho;
     }
 
-    public Vector<MatrixElement> getRow(int row) {
+    public List<MatrixElement> getRow(int row) {
         return A.get(row);
     }
 
@@ -109,7 +109,7 @@ public class AccessStructure implements Serializable {
     private void generateMatrix() {
         int c = computeLabels(policyTree);
 
-        Queue<TreeNode> queue = new LinkedList<TreeNode>();
+        Queue<TreeNode> queue = new LinkedList<>();
         queue.add(policyTree);
 
         while (!queue.isEmpty()) {
@@ -121,7 +121,7 @@ public class AccessStructure implements Serializable {
             } else {
                 rho.put(A.size(), node.getName());
                 ((Attribute) node).setX(A.size());
-                Vector<MatrixElement> Ax = new Vector<MatrixElement>(c);
+                List<MatrixElement> Ax = new ArrayList<>(c);
 
                 for (int i = 0; i < node.getLabel().length(); i++) {
                     switch (node.getLabel().charAt(i)) {
@@ -145,8 +145,8 @@ public class AccessStructure implements Serializable {
     }
 
     private int computeLabels(TreeNode root) {
-        Queue<TreeNode> queue = new LinkedList<TreeNode>();
-        StringBuffer sb = new StringBuffer();
+        Queue<TreeNode> queue = new LinkedList<>();
+        StringBuilder sb = new StringBuilder();
         int c = 1;
 
         root.setLabel("1");
@@ -225,7 +225,7 @@ public class AccessStructure implements Serializable {
 
     public void printMatrix() {
         for (int x = 0; x < A.size(); x++) {
-            Vector<MatrixElement> Ax = A.get(x);
+            List<MatrixElement> Ax = A.get(x);
             System.out.printf("%s: [", rho.get(x));
             for (MatrixElement aAx : Ax) {
                 switch (aAx) {
@@ -291,11 +291,8 @@ public class AccessStructure implements Serializable {
         } else if (!policyTree.equals(other.policyTree))
             return false;
         if (rho == null) {
-            if (other.rho != null)
-                return false;
-        } else if (!rho.equals(other.rho))
-            return false;
-        return true;
+            return other.rho == null;
+        } else return rho.equals(other.rho);
     }
 
     public enum MatrixElement {
