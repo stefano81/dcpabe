@@ -124,7 +124,7 @@ public class DCPABETool {
 			) {
                 Ciphertext nct = (Ciphertext) ois.readObject();
 
-                arho.printPolicy();
+				System.out.println(arho);
 
                 PersonalKeys pks = new PersonalKeys(args[1]);
 

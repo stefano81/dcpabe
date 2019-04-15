@@ -1,8 +1,18 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe.ac;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
+@JsonSerialize(using = AccessStructure.Serialize.class)
+@JsonDeserialize(using = AccessStructure.Deserialize.class)
 public class AccessStructure implements Serializable {
     private static final long serialVersionUID = 1L;
     private Map<Integer, String> rho;
@@ -244,60 +254,78 @@ public class AccessStructure implements Serializable {
         }
     }
 
-    private void printPolicy(TreeNode node) {
-        System.out.print(" " + node.getName());
+    private void toString(StringBuilder builder, TreeNode node) {
+        if (builder.length() != 0) builder.append(" ");
+
         if (node instanceof InternalNode) {
-            printPolicy(((InternalNode) node).getLeft());
-            printPolicy(((InternalNode) node).getRight());
+            toString(builder, ((InternalNode) node).getLeft());
+            toString(builder, ((InternalNode) node).getRight());
         }
     }
 
-    public void printPolicy() {
-        printPolicy(policyTree);
-        System.out.println();
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        toString(builder, policyTree);
+        return builder.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AccessStructure that = (AccessStructure) o;
+        return partsIndex == that.partsIndex &&
+                Objects.equals(rho, that.rho) &&
+                Objects.equals(A, that.A) &&
+                Objects.equals(policyTree, that.policyTree);
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((A == null) ? 0 : A.hashCode());
-        result = prime * result + partsIndex;
-        result = prime * result
-                + ((policyTree == null) ? 0 : policyTree.hashCode());
-        result = prime * result + ((rho == null) ? 0 : rho.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (!(obj instanceof AccessStructure))
-            return false;
-        AccessStructure other = (AccessStructure) obj;
-        if (A == null) {
-            if (other.A != null)
-                return false;
-        } else if (!A.equals(other.A))
-            return false;
-        if (partsIndex != other.partsIndex)
-            return false;
-        if (policyTree == null) {
-            if (other.policyTree != null)
-                return false;
-        } else if (!policyTree.equals(other.policyTree))
-            return false;
-        if (rho == null) {
-            return other.rho == null;
-        } else return rho.equals(other.rho);
+        return Objects.hash(rho, A, policyTree, partsIndex);
     }
 
     public enum MatrixElement {
         MINUS_ONE,
         ZERO,
         ONE
+    }
+
+    static class Serialize extends JsonSerializer {
+        @Override
+        public void serialize(Object o, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
+            jsonGenerator.writeStartObject();
+            jsonGenerator.writeStringField("policy", o.toString());
+            jsonGenerator.writeEndObject();
+        }
+    }
+
+    static class Deserialize extends JsonDeserializer {
+        @Override
+        public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            JsonNode node = jsonParser.getCodec().readTree(jsonParser);
+
+            if (!node.isObject()) throw new RuntimeException("Unable to de-serialize AccessStructure, not an object");
+
+            String policy = null;
+
+            for (Iterator<Map.Entry<String, JsonNode>> it = node.fields(); it.hasNext(); ) {
+                final Map.Entry<String, JsonNode> field = it.next();
+
+                final String fieldName = field.getKey();
+                final JsonNode fieldValue = field.getValue();
+
+                if (fieldName.equals("policy")) {
+                    policy = fieldValue.toString();
+                } else {
+                    throw new RuntimeException("Unable to deserialize AccessStructure: unknown field " + fieldName);
+                }
+            }
+
+            if (policy == null) throw new RuntimeException("Unable to de-serialize AccessStructure, not an object");
+
+            return AccessStructure.buildFromPolicy(policy);
+        }
     }
 }
