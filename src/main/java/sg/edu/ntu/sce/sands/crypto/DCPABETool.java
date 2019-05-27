@@ -23,7 +23,7 @@ public class DCPABETool {
 				decrypt(args) ||
 				globalsetup(args) ||
 				keygen(args) ||
-				authhoritySetup(args) ||
+				authoritySetup(args) ||
 				check(args)) {
         } else {
             help();
@@ -31,7 +31,7 @@ public class DCPABETool {
 	}
 
     // asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>
-    private static boolean authhoritySetup(String[] args) {
+    private static boolean authoritySetup(String[] args) {
         if (!args[0].equals("asetup") || args.length <= 5) return false;
 
 		try {
@@ -243,6 +243,6 @@ public class DCPABETool {
 		System.out.println("asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>");
 		System.out.println("keyGen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>");
 		System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
-		System.out.println("dec <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
+		System.out.println("dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
 	}
 }
