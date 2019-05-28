@@ -85,13 +85,13 @@ public class DCPABE {
             c1x2.setFromBytes(pks.getPK(arho.rho(x)).getEg1g1ai());
             c1x2.powZn(rx);
 
-            ct.setC1(c1x1.mul(c1x2).toBytes());
+            ct.addC1(c1x1.mul(c1x2).toBytes());
 
-            ct.setC2(GP.getG1().powZn(rx).toBytes());
+            ct.addC2(GP.getG1().powZn(rx).toBytes());
 
             Element c3x = pairing.getG1().newElement();
             c3x.setFromBytes(pks.getPK(arho.rho(x)).getG1yi());
-            ct.setC3(c3x.powZn(rx).mul(GP.getG1().powZn(wx)).toBytes());
+            ct.addC3(c3x.powZn(rx).mul(GP.getG1().powZn(wx)).toBytes());
         }
 
         return ct;

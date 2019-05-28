@@ -16,6 +16,27 @@ import static org.junit.Assert.assertThat;
 public class SerializationTest {
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    @Test
+    public void serializeCiphertext() throws Exception {
+        Ciphertext ciphertext = new Ciphertext();
+
+        ciphertext.setAccessStructure(AccessStructure.buildFromPolicy("or b a"));
+        ciphertext.setC0("foo".getBytes());
+        ciphertext.addC1("foo".getBytes());
+        ciphertext.addC2("foo".getBytes());
+        ciphertext.addC3("foo".getBytes());
+
+        String serializedValue = mapper.writeValueAsString(ciphertext);
+
+        System.out.println(serializedValue);
+
+        assertNotNull(serializedValue);
+
+        Ciphertext deserialized = mapper.readValue(serializedValue, Ciphertext.class);
+
+        assertNotNull(deserialized);
+        assertThat(ciphertext, equalTo(deserialized));
+    }
 
     @Test
     public void serializeGlobalParameters() throws Exception {
