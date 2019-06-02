@@ -258,8 +258,11 @@ public class AccessStructure implements Serializable {
         if (builder.length() != 0) builder.append(" ");
 
         if (node instanceof InternalNode) {
+            builder.append(node.getName());
             toString(builder, ((InternalNode) node).getLeft());
             toString(builder, ((InternalNode) node).getRight());
+        } else {
+            builder.append(node.getName());
         }
     }
 
