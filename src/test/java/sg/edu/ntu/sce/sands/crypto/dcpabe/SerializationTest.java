@@ -47,7 +47,7 @@ public class SerializationTest {
 
     @Test
     public void serializeAccessStructure() throws Exception {
-        AccessStructure ac = AccessStructure.buildFromPolicy("a b c and or");
+        AccessStructure ac = AccessStructure.buildFromPolicy("or and a b c");
 
         String serializedValue = mapper.writeValueAsString(ac);
 
