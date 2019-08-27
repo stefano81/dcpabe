@@ -12,7 +12,7 @@
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.target>${maven.compiler.source}</maven.compiler.target>
         <jackson.version>2.9.9.2</jackson.version>
     </properties>
 
