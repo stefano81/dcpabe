@@ -225,12 +225,70 @@ public class AccessStructure implements Serializable {
         }
     }
 
+    /**
+     * Generates and stores in memory the binary tree representation of a policy.
+     * The tree is built with instances of TreeNode child classes.
+     *
+     * @param policy a policy written as a monotonic boolean formula over attributes
+     *               labels. The policy can be written in both infix or polish
+     *               notation.
+     */
     private void generateTree(String policy) {
+        String[] policyParts;
         partsIndex = -1;
 
-        String[] policyParts = policy.split("\\s+");
-
+        // checking if the policy is in an infix or a prefix notation.
+        if (policy.toLowerCase().indexOf("and") > 0 && policy.toLowerCase().indexOf("or") > 0) {
+            policy = policy.replace("(", "( ").replace(")", " )");
+            policyParts = infixNotationToPolishNotation(policy.split("\\s+"));
+        } else {
+            policyParts = policy.split("\\s+");
+        }
         policyTree = generateTree(policyParts);
+    }
+
+    /**
+     * Finds the Normal Polish Notation of a policy in its infix form, by
+     * implementing the Shunting-yard Algorithm (https://w.wiki/BmY)
+     *
+     * @param policy a array of tokens of a policy written in its infix form.
+     *               Parentheses must be represented as whole tokens.
+     * @return a array of tokens of the same policy in its Normal Polish Notation.
+     */
+    private String[] infixNotationToPolishNotation(String[] policy) {
+        Map<String, Integer> precedence = new HashMap<>();
+        precedence.put("and", 2);
+        precedence.put("or", 1);
+        precedence.put("(", 0);
+
+        Stack<String> rpn = new Stack<String>(); //rpn stands for Reverse Polish Notation
+        Stack<String> operators = new Stack<String>();
+
+        for (String token : policy) {
+            if (token.equals("(")) {
+                operators.push(token);
+            } else if (token.equals(")")) {
+                while (!operators.peek().equals("(")) {
+                    rpn.add(operators.pop());
+                }
+                operators.pop();
+            } else if (precedence.containsKey(token)) {
+                while (!operators.empty() && precedence.get(token) <= precedence.get(operators.peek())) {
+                    rpn.add(operators.pop());
+                }
+                operators.push(token);
+            } else {
+                rpn.add(token);
+            }
+        }
+        while (!operators.isEmpty()) {
+            rpn.add(operators.pop());
+        }
+
+        // reversing the result to obtain Normal Polish Notation
+        List<String> polishNotation = new ArrayList<String>(rpn);
+        Collections.reverse(polishNotation);
+        return polishNotation.toArray(new String[] {});
     }
 
     public void printMatrix() {
