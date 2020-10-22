@@ -291,25 +291,28 @@ public class AccessStructure implements Serializable {
         return polishNotation.toArray(new String[] {});
     }
 
-    public void printMatrix() {
+    public String getMatrixAsString() {
+        StringBuilder sb = new StringBuilder(2*getN() + getL()*getN());
         for (int x = 0; x < A.size(); x++) {
             List<MatrixElement> Ax = A.get(x);
-            System.out.printf("%s: [", rho.get(x));
+            sb.append(String.format("%s: [", rho.get(x)));
             for (MatrixElement aAx : Ax) {
                 switch (aAx) {
                     case ONE:
-                        System.out.print("  1");
+                        sb.append("  1");
                         break;
                     case MINUS_ONE:
-                        System.out.print(" -1");
+                        sb.append(" -1");
                         break;
                     case ZERO:
-                        System.out.print("  0");
+                        sb.append("  0");
                         break;
                 }
             }
-            System.out.println("]");
+            sb.append("]\n");
         }
+        sb.delete(sb.length() - 1, sb.length());
+        return sb.toString();
     }
 
     private void toString(StringBuilder builder, TreeNode node) {

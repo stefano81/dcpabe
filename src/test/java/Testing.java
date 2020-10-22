@@ -74,21 +74,6 @@ public class Testing {
     }
 
     @Test
-    public void testAS() {
-        AccessStructure as1 = AccessStructure.buildFromPolicy("and a or d and b c");
-        System.out.println(as1.toString());
-        as1.printMatrix();
-
-        AccessStructure as2 = AccessStructure.buildFromPolicy("and or d and b c a");
-        System.out.println(as2.toString());
-        as2.printMatrix();
-
-        AccessStructure as3 = AccessStructure.buildFromPolicy("and or a b and c d");
-        System.out.println(as3.toString());
-        as3.printMatrix();
-    }
-
-    @Test
     public void testBilinearity() {
         SecureRandom random = new SecureRandom("12345".getBytes());
         Pairing pairing = PairingFactory.getPairing(new TypeACurveGenerator(random, 181, 603, true).generate());
@@ -108,5 +93,4 @@ public class Testing {
 
         assertTrue(gagb.isEqual(ggab));
     }
-
 }
