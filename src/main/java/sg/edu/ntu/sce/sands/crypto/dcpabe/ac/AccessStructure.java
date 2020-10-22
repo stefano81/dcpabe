@@ -237,8 +237,8 @@ public class AccessStructure implements Serializable {
         String[] policyParts;
         partsIndex = -1;
 
-        // checking if the policy is in an infix or a prefix notation.
-        if (policy.toLowerCase().indexOf("and") > 0 && policy.toLowerCase().indexOf("or") > 0) {
+        // policy has infix notation if logic operators aren't at the beginning of string
+        if (!(policy.toLowerCase().startsWith("and") || policy.toLowerCase().startsWith("or"))) {
             policy = policy.replace("(", "( ").replace(")", " )");
             policyParts = infixNotationToPolishNotation(policy.split("\\s+"));
         } else {
