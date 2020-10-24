@@ -10,7 +10,6 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 
 import java.security.SecureRandom;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -66,9 +65,6 @@ public class Testing {
         Ciphertext ct = DCPABE.encrypt(message, as, gp, publicKeys);
 
         Message dMessage = DCPABE.decrypt(ct, pkeys, gp);
-
-        System.out.println("M(" + message.getM().length + ") = " + Arrays.toString(message.getM()));
-        System.out.println("DM(" + dMessage.getM().length + ") = " + Arrays.toString(dMessage.getM()));
 
         assertArrayEquals(message.getM(), dMessage.getM());
     }

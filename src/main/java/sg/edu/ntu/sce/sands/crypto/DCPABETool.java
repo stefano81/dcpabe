@@ -4,6 +4,14 @@ import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
+import picocli.CommandLine.Spec;
+import picocli.CommandLine.Model.CommandSpec;
+import sg.edu.ntu.sce.sands.crypto.BasicCommand.ForcibleCommand;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.*;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
@@ -13,177 +21,253 @@ import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 import java.io.*;
 import java.security.Security;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-public class DCPABETool {
+@Command(
+	name = "",
+	headerHeading = "Usage:%n%n",
+	synopsisHeading = "",
+	descriptionHeading = "%nDescription:%n%n",
+	parameterListHeading = "%nParameters:%n",
+	optionListHeading = "%nOptions:%n",
+	synopsisSubcommandLabel = "COMMAND [arg...]",
+	description = "Toolset of commands to run a DCPABE scheme.",
+	subcommands = {
+		DCPABETool.AuthoritySetup.class,
+		DCPABETool.Check.class,
+		DCPABETool.Decrypt.class,
+		DCPABETool.Encrypt.class,
+		DCPABETool.GlobalSetup.class,
+		DCPABETool.KeyGeneration.class,
+		DCPABETool.Help.class,
+	},
+	footer = {"","Run COMMAND --help for more information on a command."})
+public class DCPABETool implements Runnable {
+
+	@Spec CommandSpec commandSpec;
+
+	private static final CommandLine cmd = new picocli.CommandLine(new DCPABETool());
 	public static void main(String[] args) {
 		Security.addProvider(new BouncyCastleProvider());
-		
-		if (encrypt(args) ||
-				decrypt(args) ||
-				globalsetup(args) ||
-				keygen(args) ||
-				authoritySetup(args) ||
-				check(args)) {
-        } else {
-            help();
-        }
+
+		cmd.setUsageHelpAutoWidth(true);
+		cmd.setUsageHelpLongOptionsMaxWidth(35);
+		int exitCode = cmd.execute(args);
+		System.exit(exitCode);
 	}
 
-    // asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>
-    private static boolean authoritySetup(String[] args) {
-        if (!args[0].equals("asetup") || args.length <= 5) return false;
+	@Override
+	public void run() {
+		cmd.usage(System.out);
+	}
 
-		try {
-			GlobalParameters gp = Utility.readGlobalParameters(args[2]);
+	@Command(name = "asetup", description = "Generates public and secret keys of attributes to an authority.")
+	static class AuthoritySetup extends ForcibleCommand {
 
-			String[] subArgs = Arrays.copyOfRange(args, 5, args.length);
+		@Parameters(index = "1", paramLabel = "<authName>", description = "Authority name")
+		String name;
 
-			AuthorityKeys ak = DCPABE.authoritySetup(args[1], gp, subArgs);
+		@Parameters(index = "2", paramLabel = "<secKeyFile>", description = "Path of file to store attribute secret keys")
+		String secKeyPath;
 
-			Utility.writeSecretKeys(args[3], ak.getSecretKeys());
-			Utility.writePublicKeys(args[4], ak.getPublicKeys());
+		@Parameters(index = "3", paramLabel = "<pubKeyFile>", description = "Path of file to store attribute public keys")
+		String pubKeyPath;
 
-            return true;
-        } catch (ClassNotFoundException | IOException e) {
-            System.err.println(e.getMessage());
-        }
+		@Parameters(index = "4", arity = "1..*", description = "List of attributes")
+		String[] attributes;
 
-        return false;
-    }
+		@Override
+		public void setFilesForValidation() {
+			inputFilePaths.add(gpPath);
+			outputFilePaths = Arrays.asList(secKeyPath, pubKeyPath);
+		}
 
-	// keygen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>
-	private static boolean keygen(String[] args) {
-		if (!args[0].equals("keyGen") || args.length != 6) return false;
+		@Override
+		public void commandBody() throws ClassNotFoundException, IOException {
+			GlobalParameters gp = Utility.readGlobalParameters(gpPath);
 
-		try {
-			GlobalParameters gp = Utility.readGlobalParameters(args[3]);
+			AuthorityKeys ak = DCPABE.authoritySetup(name, gp, attributes);
 
-			Map<String, SecretKey> skeys = Utility.readSecretKeys(args[4]);
+			Utility.writeSecretKeys(secKeyPath, ak.getSecretKeys());
+			Utility.writePublicKeys(pubKeyPath, ak.getPublicKeys());
+		}
+	}
 
-			SecretKey sk = skeys.get(args[2]);
+	@Command(name = "keygen", description = "Generates personal key of an attribute to an user.")
+	static class KeyGeneration extends ForcibleCommand {
+
+		@Parameters(index = "1", description = "User name")
+		String username;
+
+		@Parameters(index = "2", description = "An attribute")
+		String attribute;
+
+		@Parameters(index = "3", paramLabel = "<secKeyFile>", description = "Path to file containing secret key of the attribute")
+		String authoritySecKeyPath;
+
+		@Parameters(index = "4", paramLabel = "<userKeyFile>", description = "Path of file to write user personal key")
+		String userKeyPath;
+
+		@Override
+		public void setFilesForValidation() {
+			inputFilePaths = Arrays.asList(gpPath, authoritySecKeyPath);
+			outputFilePaths = Arrays.asList(userKeyPath);
+		}
+
+		@Override
+		public void commandBody() throws ClassNotFoundException, IOException {
+			GlobalParameters gp = Utility.readGlobalParameters(gpPath);
+
+			Map<String, SecretKey> skeys = Utility.readSecretKeys(authoritySecKeyPath);
+
+			SecretKey sk = skeys.get(attribute);
 
 			if (null == sk) {
-				System.err.println("Attribute not handled");
-				return false;
+				throw new RuntimeException("Attribute not handled");
 			}
 
-			PersonalKey pk = DCPABE.keyGen(args[1], args[2], sk, gp);
-            Utility.writePersonalKey(args[5], pk);
-
-			return true;
-		} catch (ClassNotFoundException | IOException e) {
-			System.err.println(e.getMessage());
-            e.printStackTrace();
+			PersonalKey pk = DCPABE.keyGen(username, attribute, sk, gp);
+            Utility.writePersonalKey(userKeyPath, pk);
 		}
-
-        return false;
 	}
 
-	private static boolean globalsetup(String[] args) {
-		if (!args[0].equals("gsetup") || args.length != 2) return false;
+	@Command(name = "gsetup", description = "Setup DCPABE common parameters, used by users and authorities.")
+	static class GlobalSetup extends ForcibleCommand {
 
-		try {
+		@Override
+		public void setFilesForValidation() {
+			outputFilePaths = Arrays.asList(gpPath);
+		}
+
+		@Override
+		public void commandBody() throws ClassNotFoundException, IOException {
 			GlobalParameters gp = DCPABE.globalSetup(160);
 
-			Utility.writeGlobalParameters(args[1], gp);
+			Utility.writeGlobalParameters(gpPath, gp);
+		}
+	}
 
-			return true;
-		} catch (FileNotFoundException e) {
-			System.err.println(e.getMessage());
-		} catch (IOException e) {
-			System.err.println("Error operating on the file");
+	@Command(
+		name = "check",
+		description = "Checks wether encryption and decryption could work with provided arguments."
+	)
+	static class Check extends BasicCommand
+	 {
+		@Parameters(index = "1", description = "User name")
+		String username;
+
+		@Parameters(index = "2", description = "access policy to test")
+		String policy;
+
+		@Parameters(index = "3", split = ",", splitSynopsisLabel = ",", paramLabel = "<pubKey> ", description = "files containing public keys of the attributes used in policy")
+		List<String> authPubKeys;
+
+		@Parameters(index = "4", split = ",", splitSynopsisLabel = ",", description = "files containing personal keys of the attributes used in policy")
+		List<String> userKey;
+
+		@Option(names = {"-d", "--debug"}, description = "Prints extra information to console. Disabled by default")
+		boolean debug;
+
+		@Override
+		public void setFilesForValidation() {
+			inputFilePaths.add(gpPath);
+			inputFilePaths.addAll(authPubKeys);
+			inputFilePaths.addAll(userKey);
 		}
 
-		return false;
-	}
-	
-	// check <username> <policy> <gpfile> m <authorityP 1>...<authorityP m> n <keyfile 1> ... <keyfile n>
-	@SuppressWarnings("unchecked")
-	private static boolean check(String[] args) {
-		if (!args[0].equals("check") || args.length < 8) return false;
+		@Override
+		public void commandBody() throws ClassNotFoundException, IOException {
+			GlobalParameters gp = Utility.readGlobalParameters(gpPath);
 
-		try {
-            GlobalParameters gp = Utility.readGlobalParameters(args[3]);
-
-            PublicKeys pubKeys = new PublicKeys();
-
-            int m = Integer.parseInt(args[4]);
-            for (int i = 0; i < m; i++) {
-                pubKeys.subscribeAuthority(Utility.readPublicKeys(args[4 + i + 1]));
-            }
+			PublicKeys pubKeys = new PublicKeys();
+			for (String path : authPubKeys) {
+				pubKeys.subscribeAuthority(Utility.readPublicKeys(path));
+			}
 
             Message om = DCPABE.generateRandomMessage(gp);
-            AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
+            AccessStructure arho = AccessStructure.buildFromPolicy(policy);
             Ciphertext oct = DCPABE.encrypt(om, arho, gp, pubKeys);
 
             byte[] cipherAsBytes = Utility.toBytes(oct);
             try (
-            		ByteArrayInputStream input = new ByteArrayInputStream(cipherAsBytes);
-            		ObjectInputStream ois = new ObjectInputStream(input)
+					ByteArrayInputStream input = new ByteArrayInputStream(cipherAsBytes);
+				 	ObjectInputStream ois = new ObjectInputStream(input)
 			) {
                 Ciphertext nct = (Ciphertext) ois.readObject();
 
-				System.out.println(arho);
+				if (debug) {
+					System.out.println(arho);
+				}
 
-                PersonalKeys pks = new PersonalKeys(args[1]);
+				PersonalKeys pks = new PersonalKeys(username);
+				for (String path : userKey) {
+					pks.addKey(Utility.readPersonalKey(path));
+				}
+				Message dm = DCPABE.decrypt(nct, pks, gp);
 
-                int n = Integer.parseInt(args[4 + m + 1]);
-                for (int i = 0; i < n; i++) {
-                    pks.addKey(Utility.readPersonalKey(args[4 + i + m + 2]));
-                }
+				boolean equalMessage = Arrays.equals(om.getM(), dm.getM());
 
-                Message dm = DCPABE.decrypt(nct, pks, gp);
-
-                System.err.println(om.getM().length);
-                System.err.println(dm.getM().length);
-                System.err.println(Arrays.toString(om.getM()));
-                System.err.println(Arrays.toString(dm.getM()));
-
-                return true;
-            }
-        } catch (IllegalStateException | IOException | DataLengthException | ClassNotFoundException e) {
-			System.err.println(e.getMessage());
+				if (equalMessage) {
+					if (debug) {
+						System.out.println("message successfully encrypted and decrypted");
+						System.out.println("Message: " + Arrays.toString(dm.getM()));
+					}
+				} else {
+					throw new RuntimeException("check failed");
+				}
+            } catch (IllegalStateException | DataLengthException  e) {
+				e.printStackTrace();			}
 		}
-
-        return false;
 	}
 
-	// dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>
-    private static boolean decrypt(String[] args) {
-        if (!args[0].equals("dec") || args.length < 6) return false;
+	@Command(name = "decrypt", aliases = "dec", description = "Decrypts a file.")
+	static class Decrypt extends ForcibleCommand {
 
-        try (
-        		FileInputStream input = new FileInputStream(args[2]);
-        		ObjectInputStream oIn = new ObjectInputStream(input)
-		) {
-            GlobalParameters gp = Utility.readGlobalParameters(args[4]);
+		@Parameters(index = "1", description = "User name")
+		String username;
 
-            PersonalKeys pks = new PersonalKeys(args[1]);
+		@Parameters(index = "2", description = "Path to encrypted file")
+		String ciphertext;
 
-            for (int i = 5; i < args.length; i++) {
-//				System.err.println(pk.getAttribute());
-                pks.addKey(Utility.readPersonalKey(args[i]));
-            }
+		@Parameters(index = "3", description = "output file name")
+		String plaintext;
 
-            Ciphertext ct = Utility.readCiphertext(oIn);
-            Message m = DCPABE.decrypt(ct, pks, gp);
+		@Parameters(index = "4", arity = "1..*", paramLabel = "<userKey>", description = "List of personal key files necessary to satisfy encrypt file policy")
+		List<String> personalKeyPaths;
 
-            PaddedBufferedBlockCipher aes = Utility.initializeAES(m.getM(), false);
+		@Override
+		public void setFilesForValidation() {
+			inputFilePaths.add(gpPath);
+			inputFilePaths.addAll(personalKeyPaths);
+			outputFilePaths = Arrays.asList(plaintext);
+		}
 
-            try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(args[3]))) {
-                encryptOrDecryptPayload(aes, oIn, bos);
-                bos.flush();
-            }
+		@Override
+		public void commandBody() throws ClassNotFoundException, IOException {
+			try (
+        			FileInputStream input = new FileInputStream(ciphertext);
+        			ObjectInputStream oIn = new ObjectInputStream(input)
+			) {
+				GlobalParameters gp = Utility.readGlobalParameters(gpPath);
 
-            return true;
-        } catch (IOException | ClassNotFoundException | DataLengthException | IllegalStateException | InvalidCipherTextException e) {
-            System.err.println(e.getMessage());
-            e.printStackTrace();
-        }
+				PersonalKeys pks = new PersonalKeys(username);
+				for (String path : personalKeyPaths) {
+					pks.addKey(Utility.readPersonalKey(path));
+				}
 
-        return false;
-    }
+				Ciphertext ct = Utility.readCiphertext(oIn);
+				Message m = DCPABE.decrypt(ct, pks, gp);
+				PaddedBufferedBlockCipher aes = Utility.initializeAES(m.getM(), false);
+				try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(plaintext))) {
+					encryptOrDecryptPayload(aes, oIn, bos);
+					bos.flush();
+				}
+			} catch (DataLengthException | IllegalStateException | InvalidCipherTextException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
     private static void encryptOrDecryptPayload(PaddedBufferedBlockCipher cipher, InputStream is, OutputStream os) throws DataLengthException, IllegalStateException, InvalidCipherTextException, IOException {
         byte[] inBuff = new byte[cipher.getBlockSize()];
@@ -197,52 +281,74 @@ public class DCPABETool {
         os.write(outBuff, 0, nbytes);
     }
 
-	// enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>
-	@SuppressWarnings("unchecked")
-	private static boolean encrypt(String[] args) {
-		if (!args[0].equals("enc") || args.length < 6) return false;
+	@Command(name ="encrypt", aliases = "enc", description = "Encrypts a file.")
+	static class Encrypt extends ForcibleCommand {
 
-		try {
-			GlobalParameters gp = Utility.readGlobalParameters(args[4]);
+		@Parameters(index = "1", paramLabel = "<src>", description = "source file path")
+		String plaintext;
+
+		@Parameters(index = "2", description = "access policy for encryption, in terms of attributes and AND/OR operators")
+		String policy;
+
+		@Parameters(index = "3", paramLabel = "<out>", description = "encrypted file path")
+		String ciphertext;
+
+		@Parameters(index = "4", arity = "1..*", paramLabel = "<pubKey>", description = "files containing public keys of the attributes used in policy")
+		List<String> authorityPubKeyPaths;
+
+		@Override
+		public void setFilesForValidation() {
+			inputFilePaths.add(gpPath);
+			inputFilePaths.addAll(authorityPubKeyPaths);
+			outputFilePaths = Arrays.asList(ciphertext);
+		}
+
+		@Override
+		public void commandBody() throws ClassNotFoundException, IOException {
+			GlobalParameters gp = Utility.readGlobalParameters(gpPath);
 
 			PublicKeys pks = new PublicKeys();
-
-			for (int i = 5; i < args.length; i++) {
-				pks.subscribeAuthority(Utility.readPublicKeys(args[i]));
+			for (String path : authorityPubKeyPaths) {
+				pks.subscribeAuthority(Utility.readPublicKeys(path));
 			}
 
-			AccessStructure arho = AccessStructure.buildFromPolicy(args[2]);
+			AccessStructure arho = AccessStructure.buildFromPolicy(policy);
 			Message m = DCPABE.generateRandomMessage(gp);
 			Ciphertext ct = DCPABE.encrypt(m, arho, gp, pks);
-			
+
 			try (
-					FileOutputStream fos = new FileOutputStream(args[3]);
+					FileOutputStream fos = new FileOutputStream(ciphertext);
 					ObjectOutputStream oos = new ObjectOutputStream(fos);
 
-					FileInputStream fis = new FileInputStream(args[1]);
+					FileInputStream fis = new FileInputStream(plaintext);
 					BufferedInputStream bis = new BufferedInputStream(fis);
 			) {
 				oos.writeObject(ct);
-
                 PaddedBufferedBlockCipher aes = Utility.initializeAES(m.getM(), true);
-
 				encryptOrDecryptPayload(aes, bis, oos);
-
-				return true;
-
+			} catch (DataLengthException | InvalidCipherTextException | IllegalStateException e) {
+				e.printStackTrace();
 			}
-		} catch (IOException | DataLengthException | ClassNotFoundException | InvalidCipherTextException | IllegalStateException e) {
-			e.printStackTrace();
 		}
-        return false;
+	}
+	@Command(name = "help", description = "Shows a list of commands or help for one command.")
+    static class Help implements Runnable {
+
+        @Parameters(index = "0..1",defaultValue = "") String command;
+
+        @Override
+        public void run() {
+            if (command.equals("")) {
+                cmd.usage(System.out);
+            } else if (!cmd.getSubcommands().containsKey(command)) {
+                System.out.println("Unknown command: " + command);
+            } else {
+                cmd.getSubcommands().get(command).usage(System.out);
+            }
+        }
 	}
 
-	private static void help() {
-		System.out.println("Syntax:");
-		System.out.println("gsetup <gpfile>");
-		System.out.println("asetup <authority name> <gpfile> <authorityfileS> <authorityfileP> <attribute 1 > ... <attribute n>");
-		System.out.println("keyGen <username> <attribute name> <gpfile> <authorityfileS> <keyfile>");
-		System.out.println("enc <resource file> <policy> <ciphertext> <gpfile> <authorityfileP 1> ... <authorityfileP n>");
-		System.out.println("dec <username> <ciphertext> <resource file> <gpfile> <keyfile 1> <keyfile 2>");
+	static CommandLine getCommandLine() {
+		return cmd;
 	}
 }
