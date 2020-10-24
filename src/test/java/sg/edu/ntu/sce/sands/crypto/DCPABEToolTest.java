@@ -233,4 +233,35 @@ public class DCPABEToolTest {
             assertFalse(key1AFile.exists());
         }
     }
+
+    @Test
+    public void testPrintsVersion() {
+        cmd.setOut(fakeCmdOutput);
+        File properties = new File(DCPABETool.class.getResource("/project.properties").getPath());
+        List<String> lines = new ArrayList<>();
+        String version_expected = null;
+        try {
+            lines = Files.readAllLines(properties.toPath());
+            for (String line : lines) {
+                if (line.startsWith("version")) {
+                    version_expected = line.split("=")[1];
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            fail("failed to access project.properties resource");
+        }
+
+        int exitCode = cmd.execute("--version");
+        String version = null;
+        try (Stream<String> output = Files.lines(fakeOutput.toPath())) {
+            version = output.iterator().next();
+        } catch (IOException e) {
+            fail("failed to retrieve command output");
+        }
+
+        assertEquals(0, exitCode);
+        assertNotNull(version);
+        assertEquals("DCPABE version: " + version_expected, version.trim());
+    }
 }

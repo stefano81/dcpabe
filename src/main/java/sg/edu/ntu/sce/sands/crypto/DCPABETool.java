@@ -26,6 +26,7 @@ import java.util.Map;
 
 @Command(
 	name = "",
+	versionProvider = sg.edu.ntu.sce.sands.crypto.utility.VersionProvider.class,
 	headerHeading = "Usage:%n%n",
 	synopsisHeading = "",
 	descriptionHeading = "%nDescription:%n%n",
@@ -46,6 +47,9 @@ import java.util.Map;
 public class DCPABETool implements Runnable {
 
 	@Spec CommandSpec commandSpec;
+
+	@Option(names = {"--version", "-V"}, versionHelp = true, description = "print version information and exit")
+	boolean versionRequested;
 
 	private static final CommandLine cmd = new picocli.CommandLine(new DCPABETool());
 	public static void main(String[] args) {
