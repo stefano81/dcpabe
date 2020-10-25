@@ -23,8 +23,10 @@
     </scm>
 
     <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.release>8</maven.compiler.release>
     </properties>
 
     <build>
@@ -98,6 +100,15 @@
 
     <!-- conditional build of jar with dependencies. To get it, run mvn command with -P fatjar -->
     <profiles>
+        <profile>
+            <id>javac-release</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
         <profile>
             <id>fatjar</id>
             <build>
