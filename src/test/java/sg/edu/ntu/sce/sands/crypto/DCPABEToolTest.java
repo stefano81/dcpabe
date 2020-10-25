@@ -8,10 +8,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import picocli.CommandLine;
-import sg.edu.ntu.sce.sands.crypto.utility.VersionProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -23,10 +24,9 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 public class DCPABEToolTest {
+    private static CommandLine cmd;
     private static File gpFile;
     private static File resFile;
-    private static CommandLine cmd;
-    private static PrintWriter defaultCmdOutput;
 
     private File apFileS;
     private File apFileP;
@@ -47,7 +47,6 @@ public class DCPABEToolTest {
         gpFile = File.createTempFile("dcpabe", "gp");
         cmd = new CommandLine(new DCPABETool());
         cmd.execute("gsetup", "-f", gpFile.getPath());
-        defaultCmdOutput = cmd.getOut();
         resFile = new File(DCPABEToolTest.class.getResource("/testResource.txt").toURI());
     }
 
@@ -55,6 +54,8 @@ public class DCPABEToolTest {
     public void setUp() throws Exception {
         fakeOutput = folder.newFile();
         fakeCmdOutput = new PrintWriter(fakeOutput);
+        cmd.setErr(fakeCmdOutput);
+        cmd.setOut(fakeCmdOutput);
 
         apFileS = folder.newFile();
         apFileP = folder.newFile();
@@ -66,7 +67,6 @@ public class DCPABEToolTest {
 
     @After
     public void tearDown() {
-        cmd.setOut(defaultCmdOutput);
         fakeCmdOutput.close();
     }
 
@@ -144,7 +144,6 @@ public class DCPABEToolTest {
     public void testASetupFailsWhenMissingArgs() {
         assertTrue(apFileS.delete());
         assertTrue(apFileP.delete());
-        cmd.setErr(fakeCmdOutput);
 
         List<String> args = new ArrayList<>();
         args.addAll(Arrays.asList("asetup", "authority1", gpFile.getPath(), apFileS.getPath(), apFileP.getPath(),
@@ -162,7 +161,6 @@ public class DCPABEToolTest {
 
     @Test
     public void testCheckFailsWhenMissingArgs() {
-        cmd.setErr(fakeCmdOutput);
 
         List<String> args = new ArrayList<>();
         args.addAll(Arrays.asList("check", gpFile.getPath(), "user1", policy, "--pk", apFileP.getPath(), "--ek", key1AFile.getPath()));
@@ -177,7 +175,6 @@ public class DCPABEToolTest {
 
     @Test
     public void testDecryptFailsWhenMissingArgs() {
-        cmd.setErr(fakeCmdOutput);
 
         List<String> args = new ArrayList<>();
         args.addAll(Arrays.asList("dec", gpFile.getPath(), "user1", encFile.getPath(), resFile2.getPath(),
@@ -194,7 +191,6 @@ public class DCPABEToolTest {
     @Test
     public void testEncryptFailsWhenMissingArgs() {
         assertTrue(encFile.delete());
-        cmd.setErr(fakeCmdOutput);
 
         List<String> args = new ArrayList<>();
         args.addAll(Arrays.asList("enc", gpFile.getPath(), resFile.getPath(), policy, encFile.getPath(),
@@ -211,7 +207,6 @@ public class DCPABEToolTest {
 
     @Test
     public void testGSetupFailsWhenMissingArgs() {
-        cmd.setErr(fakeCmdOutput);
         int exitCode = cmd.execute("gsetup");
 
         assertEquals(2, exitCode);
@@ -220,7 +215,6 @@ public class DCPABEToolTest {
     @Test
     public void testKeyGenFailsWhenMissingArgs() {
         assertTrue(key1AFile.delete());
-        cmd.setErr(fakeCmdOutput);
 
         List<String> args = new ArrayList<>();
         args.addAll(Arrays.asList("keygen", gpFile.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath()));
@@ -236,7 +230,6 @@ public class DCPABEToolTest {
 
     @Test
     public void testPrintsVersion() {
-        cmd.setOut(fakeCmdOutput);
         File properties = new File(DCPABETool.class.getResource("/project.properties").getPath());
         List<String> lines = new ArrayList<>();
         String version_expected = null;
@@ -263,5 +256,52 @@ public class DCPABEToolTest {
         assertEquals(0, exitCode);
         assertNotNull(version);
         assertEquals("DCPABE version: " + version_expected, version.trim());
+    }
+
+    @Test
+    public void testCommandFailsWhenInputFileDoesNotExist() throws IOException {
+        // BUG: CommandLine insists to print to System.err, but only when gpFile is missing
+        PrintStream SystemErr = System.err;
+        System.setErr(new PrintStream(fakeOutput));
+        File gpFile_ = folder.newFile();
+        gpFile_.delete();
+        String[][] commands = {
+            {"asetup", "-f", gpFile_.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d"},
+            {"dec", gpFile_.getPath(), "user1", encFile.getPath(), resFile2.getPath(),
+            key1AFile.getPath()},
+            {"enc", gpFile_.getPath(), resFile.getPath(), policy, encFile.getPath(),
+            apFileP.getPath()},
+            {"keygen", gpFile_.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath()}
+        };
+        int exitCode_expected = 2;
+
+        for (String[] command : commands) {
+            int exitCode = cmd.execute(command);
+
+            String msg = String.format("command \"%s\" output %d exitCode. Expected: %d.", command[0], exitCode, exitCode_expected);
+            assertEquals(msg, exitCode_expected, exitCode);
+        }
+        System.setErr(SystemErr);
+    }
+
+    @Test
+    public void testCommandFailsWhenInputFilePathIsInvalid() {
+        String invalidGpPath = "some//folder\\\\gpfile:,?!";
+        String[][] commands = {
+            {"asetup", "-f", invalidGpPath, "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d"},
+            {"dec", invalidGpPath, "user1", encFile.getPath(), resFile2.getPath(),
+            key1AFile.getPath()},
+            {"enc", invalidGpPath, resFile.getPath(), policy, encFile.getPath(),
+            apFileP.getPath()},
+            {"keygen", invalidGpPath, "user1", "a", apFileS.getPath(), key1AFile.getPath()}
+        };
+        int exitCode_expected = 2;
+
+        for (String[] command : commands) {
+            int exitCode = cmd.execute(command);
+
+            String msg = String.format("command \"%s\" output %d exitCode. Expected: %d.", command[0], exitCode, exitCode_expected);
+            assertEquals(msg, exitCode_expected, exitCode);
+        }
     }
 }
