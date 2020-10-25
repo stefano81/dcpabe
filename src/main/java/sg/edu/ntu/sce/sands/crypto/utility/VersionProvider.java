@@ -1,11 +1,9 @@
 package sg.edu.ntu.sce.sands.crypto.utility;
 
-import java.io.File;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import picocli.CommandLine.IVersionProvider;
 import sg.edu.ntu.sce.sands.crypto.DCPABETool;
@@ -14,19 +12,19 @@ public class VersionProvider implements IVersionProvider {
 
     @Override
     public String[] getVersion() {
-        List<String> lines = new ArrayList<>();
+        InputStream is = DCPABETool.class.getResourceAsStream("/project.properties");
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        String version = null;
         try {
-            File properties = new File(DCPABETool.class.getResource("/project.properties").toURI());
-            lines = Files.readAllLines(properties.toPath());
-        } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
-        }
-        String version = "null";
-        for (String line : lines) {
-            if (line.startsWith("version")) {
-                version = line.split("=")[1];
-                break;
+            while (reader.ready()) {
+                String line = reader.readLine();
+                if (line.startsWith("version")) {
+                    version = line.split("=")[1];
+                    break;
+                }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return new String[] {String.format("DCPABE version: %s", version)};
     }

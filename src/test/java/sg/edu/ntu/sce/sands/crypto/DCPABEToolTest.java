@@ -11,7 +11,6 @@ import picocli.CommandLine;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -82,7 +81,7 @@ public class DCPABEToolTest {
 
         assertEquals(0, exitCode);
         assertTrue(resFile2.exists());
-        assertThat(resFile.length(), is(resFile2.length()));
+        assertEquals(resFile.length(), resFile2.length());
     }
 
     @Test
@@ -230,20 +229,7 @@ public class DCPABEToolTest {
 
     @Test
     public void testPrintsVersion() {
-        File properties = new File(DCPABETool.class.getResource("/project.properties").getPath());
-        List<String> lines = new ArrayList<>();
-        String version_expected = null;
-        try {
-            lines = Files.readAllLines(properties.toPath());
-            for (String line : lines) {
-                if (line.startsWith("version")) {
-                    version_expected = line.split("=")[1];
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            fail("failed to access project.properties resource");
-        }
+        String version_expected = "1.2.0";
 
         int exitCode = cmd.execute("--version");
         String version = null;
