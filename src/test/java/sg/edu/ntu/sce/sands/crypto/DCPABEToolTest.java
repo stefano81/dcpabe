@@ -3,15 +3,27 @@ package sg.edu.ntu.sce.sands.crypto;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
+import picocli.CommandLine;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 public class DCPABEToolTest {
+    private static CommandLine cmd;
     private static File gpFile;
     private static File resFile;
 
@@ -21,158 +33,261 @@ public class DCPABEToolTest {
     private File resFile2;
     private File key1AFile;
     private File key1DFile;
+    private File fakeOutput;
+    private PrintWriter fakeCmdOutput;
+
     private static final String policy = "and a or d and b c";
+
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
 
     @BeforeClass
     public static void beforeAll() throws Exception {
         gpFile = File.createTempFile("dcpabe", "gp");
-
-        String[] args = {"gsetup", gpFile.getAbsolutePath()};
-        DCPABETool.main(args);
-
+        cmd = new CommandLine(new DCPABETool());
+        cmd.execute("gsetup", "-f", gpFile.getPath());
         resFile = new File(DCPABEToolTest.class.getResource("/testResource.txt").toURI());
     }
 
     @Before
     public void setUp() throws Exception {
-        apFileS = File.createTempFile("authority", "sk");
-        apFileS.deleteOnExit();
+        fakeOutput = folder.newFile();
+        fakeCmdOutput = new PrintWriter(fakeOutput);
+        cmd.setErr(fakeCmdOutput);
+        cmd.setOut(fakeCmdOutput);
 
-        apFileP = File.createTempFile("authority", "pk");
-        apFileP.deleteOnExit();
-
-        encFile = File.createTempFile("res", "enc");
-        encFile.deleteOnExit();
-
-        resFile2 = File.createTempFile("res", "dec");
-        resFile2.deleteOnExit();
-
-        key1AFile = File.createTempFile("user1_a", "key");
-        key1AFile.deleteOnExit();
-
-        key1DFile = File.createTempFile("user1_d", "key");
-        key1DFile.deleteOnExit();
+        apFileS = folder.newFile();
+        apFileP = folder.newFile();
+        encFile = folder.newFile();
+        resFile2 = folder.newFile();
+        key1AFile = folder.newFile();
+        key1DFile = folder.newFile();
     }
 
     @After
     public void tearDown() {
+        fakeCmdOutput.close();
     }
 
     @Test
-    public void testDecryptOk() throws Exception {
-                String[] asetup = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
+    public void testDecryptWorks() throws Exception {
+        cmd.execute("asetup", "-f", gpFile.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d");
+        cmd.execute("enc", "-f", gpFile.getPath(), resFile.getPath(), policy, encFile.getPath(), apFileP.getPath());
+        cmd.execute("keygen", "-f", gpFile.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath());
+        cmd.execute("keygen", "-f", gpFile.getPath(), "user1", "d", apFileS.getPath(), key1DFile.getPath());
 
-                DCPABETool.main(asetup);
+        int exitCode = cmd.execute("dec", "-f", gpFile.getPath(), "user1", encFile.getPath(), resFile2.getPath(),
+                key1AFile.getPath(), key1DFile.getPath());
 
-            String[] enc = {"enc", resFile.getAbsolutePath(), policy, encFile.getAbsolutePath(), gpFile.getAbsolutePath(), apFileP.getAbsolutePath()};
-
-            DCPABETool.main(enc);
-
-
-            String[] keyGenA = {"keyGen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
-
-            DCPABETool.main(keyGenA);
-
-
-            String[] keyGenD = {"keyGen", "user1", "d", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
-
-            DCPABETool.main(keyGenD);
-
-
-        String[] args = {"dec", "user1", encFile.getAbsolutePath(), resFile2.getAbsolutePath(), gpFile.getAbsolutePath(), key1AFile.getAbsolutePath(), key1DFile.getAbsolutePath()};
-
-        DCPABETool.main(args);
-
-        assertTrue(key1AFile.exists());
-        assertTrue(key1DFile.exists());
+        assertEquals(0, exitCode);
         assertTrue(resFile2.exists());
-
-        assertThat(resFile.length(), is(resFile2.length()));
+        assertEquals(resFile.length(), resFile2.length());
     }
 
     @Test
-    public void testCheck() throws Exception {
-        String[] asetup = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
+    public void testCheckWorks() throws Exception {
+        cmd.execute("asetup", "-f", gpFile.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d");
+        cmd.execute("keygen", "-f", gpFile.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath());
+        cmd.execute("keygen", "-f", gpFile.getPath(), "user1", "d", apFileS.getPath(), key1DFile.getPath());
+        String userKeys = String.join(",", key1AFile.getPath(), key1DFile.getPath());
+        int exitCode = cmd.execute("check", gpFile.getPath(), "user1", policy, apFileP.getPath(), userKeys);
 
-        DCPABETool.main(asetup);
-
-
-        String[] keyGenA = {"keyGen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
-
-        DCPABETool.main(keyGenA);
-
-        String[] keyGenD = {"keyGen", "user1", "d", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1DFile.getAbsolutePath()};
-
-        DCPABETool.main(keyGenD);
-
-        //check <username> <resource> <policy> <gpfile> m <authority 1>...<authority m> n <keyfile 1> ... <keyfile n>
-        String[] args = {"check", "user1", policy, gpFile.getAbsolutePath(), "1", apFileP.getAbsolutePath(), "2", key1AFile.getAbsolutePath(), key1DFile.getAbsolutePath()};
-
-        DCPABETool.main(args);
+        assertEquals(0, exitCode);
     }
 
     @Test
-    public void testEncrypt() {
-        String[] asetupArgs = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
+    public void testEncryptWorks() {
+        cmd.execute("asetup", "-f", gpFile.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d");
 
-        DCPABETool.main(asetupArgs);
+        int exitCode = cmd.execute("enc", gpFile.getPath(), resFile.getPath(), policy, encFile.getPath(),
+                apFileP.getPath(), "-f");
 
-        String[] args = {"enc", resFile.getAbsolutePath(), policy, encFile.getAbsolutePath(), gpFile.getAbsolutePath(), apFileP.getAbsolutePath()};
-
-        DCPABETool.main(args);
-
+        assertEquals(0, exitCode);
         assertTrue(apFileP.exists());
         assertTrue(encFile.exists());
     }
 
     @Test
-    public void testKeyGen() {
-        String[] asetupArgs = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
-        DCPABETool.main(asetupArgs);
+    public void testKeyGenWorks() {
+        cmd.execute("asetup", "-f", gpFile.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d");
 
-        assertTrue(apFileS.exists());
+        int exitCode = cmd.execute("keygen", "-f", gpFile.getPath(), "user1", "a", apFileS.getPath(),
+                key1AFile.getPath());
 
-        String[] args = {"keyGen", "user1", "a", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), key1AFile.getAbsolutePath()};
-
-        DCPABETool.main(args);
-
+        assertEquals(0, exitCode);
         assertTrue(apFileS.exists());
         assertTrue(key1AFile.exists());
     }
 
     @Test
-    public void testAsetup() {
-        if (apFileP.exists()) {
-            assertTrue(apFileP.delete());
-        }
-        if (apFileS.exists()) {
-            assertTrue(apFileS.delete());
-        }
+    public void testASetupWorks() {
+        int exitCode = cmd.execute("asetup", "-f", gpFile.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d");
 
-        assertFalse(apFileP.exists());
-        assertFalse(apFileS.exists());
-
-        String[] args = {"asetup", "authority1", gpFile.getAbsolutePath(), apFileS.getAbsolutePath(), apFileP.getAbsolutePath(), "a", "b", "c", "d"};
-
-        DCPABETool.main(args);
-
+        assertEquals(0, exitCode);
         assertTrue(apFileP.exists());
         assertTrue(apFileS.exists());
     }
 
     @Test
-    public void testGSetup() throws IOException {
+    public void testGSetupWorks() throws IOException {
         File gpFile = File.createTempFile("testGlobalSetup", "gp");
+        gpFile.deleteOnExit();
 
-        if (gpFile.exists()) {
-            assertTrue(gpFile.delete());
-        }
-        assertFalse(gpFile.exists());
+        int exitCode = cmd.execute("gsetup", gpFile.getPath());
 
-        String[] args = {"gsetup", gpFile.getAbsolutePath()};
-
-        DCPABETool.main(args);
-
+        assertEquals(0, exitCode);
         assertTrue(gpFile.exists());
+    }
+
+    @Test
+    public void testASetupFailsWhenMissingArgs() {
+        assertTrue(apFileS.delete());
+        assertTrue(apFileP.delete());
+
+        List<String> args = new ArrayList<>();
+        args.addAll(Arrays.asList("asetup", "authority1", gpFile.getPath(), apFileS.getPath(), apFileP.getPath(),
+                "attribute1"));
+        for (int i = 1; i < args.size(); i++) {
+            String missingArgs = args.remove(i);
+            int exitCode = cmd.execute(args.toArray(new String[0]));
+            args.add(i, missingArgs);
+
+            assertEquals(2, exitCode);
+            assertFalse(apFileS.exists());
+            assertFalse(apFileP.exists());
+        }
+    }
+
+    @Test
+    public void testCheckFailsWhenMissingArgs() {
+
+        List<String> args = new ArrayList<>();
+        args.addAll(Arrays.asList("check", gpFile.getPath(), "user1", policy, "--pk", apFileP.getPath(), "--ek", key1AFile.getPath()));
+        for (int i = 1; i < args.size(); i++) {
+            String missingArgs = args.remove(i);
+            int exitCode = cmd.execute(args.toArray(new String[0]));
+            args.add(i, missingArgs);
+
+            assertEquals(2, exitCode);
+        }
+    }
+
+    @Test
+    public void testDecryptFailsWhenMissingArgs() {
+
+        List<String> args = new ArrayList<>();
+        args.addAll(Arrays.asList("dec", gpFile.getPath(), "user1", encFile.getPath(), resFile2.getPath(),
+                key1AFile.getPath()));
+        for (int i = 1; i < args.size(); i++) {
+            String missingArgs = args.remove(i);
+            int exitCode = cmd.execute(args.toArray(new String[0]));
+            args.add(i, missingArgs);
+
+            assertEquals(2, exitCode);
+        }
+    }
+
+    @Test
+    public void testEncryptFailsWhenMissingArgs() {
+        assertTrue(encFile.delete());
+
+        List<String> args = new ArrayList<>();
+        args.addAll(Arrays.asList("enc", gpFile.getPath(), resFile.getPath(), policy, encFile.getPath(),
+                apFileP.getPath()));
+        for (int i = 1; i < args.size(); i++) {
+            String missingArgs = args.remove(i);
+            int exitCode = cmd.execute(args.toArray(new String[0]));
+            args.add(i, missingArgs);
+
+            assertEquals(2, exitCode);
+            assertFalse(encFile.exists());
+        }
+    }
+
+    @Test
+    public void testGSetupFailsWhenMissingArgs() {
+        int exitCode = cmd.execute("gsetup");
+
+        assertEquals(2, exitCode);
+    }
+
+    @Test
+    public void testKeyGenFailsWhenMissingArgs() {
+        assertTrue(key1AFile.delete());
+
+        List<String> args = new ArrayList<>();
+        args.addAll(Arrays.asList("keygen", gpFile.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath()));
+        for (int i = 1; i < args.size(); i++) {
+            String missingArgs = args.remove(i);
+            int exitCode = cmd.execute(args.toArray(new String[0]));
+            args.add(i, missingArgs);
+
+            assertEquals(2, exitCode);
+            assertFalse(key1AFile.exists());
+        }
+    }
+
+    @Test
+    public void testPrintsVersion() {
+        String version_expected = "1.2.0";
+
+        int exitCode = cmd.execute("--version");
+        String version = null;
+        try (Stream<String> output = Files.lines(fakeOutput.toPath())) {
+            version = output.iterator().next();
+        } catch (IOException e) {
+            fail("failed to retrieve command output");
+        }
+
+        assertEquals(0, exitCode);
+        assertNotNull(version);
+        assertEquals("DCPABE version: " + version_expected, version.trim());
+    }
+
+    @Test
+    public void testCommandFailsWhenInputFileDoesNotExist() throws IOException {
+        // BUG: CommandLine insists to print to System.err, but only when gpFile is missing
+        PrintStream SystemErr = System.err;
+        System.setErr(new PrintStream(fakeOutput));
+        File gpFile_ = folder.newFile();
+        gpFile_.delete();
+        String[][] commands = {
+            {"asetup", "-f", gpFile_.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d"},
+            {"dec", gpFile_.getPath(), "user1", encFile.getPath(), resFile2.getPath(),
+            key1AFile.getPath()},
+            {"enc", gpFile_.getPath(), resFile.getPath(), policy, encFile.getPath(),
+            apFileP.getPath()},
+            {"keygen", gpFile_.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath()}
+        };
+        int exitCode_expected = 2;
+
+        for (String[] command : commands) {
+            int exitCode = cmd.execute(command);
+
+            String msg = String.format("command \"%s\" output %d exitCode. Expected: %d.", command[0], exitCode, exitCode_expected);
+            assertEquals(msg, exitCode_expected, exitCode);
+        }
+        System.setErr(SystemErr);
+    }
+
+    @Test
+    public void testCommandFailsWhenInputFilePathIsInvalid() {
+        String invalidGpPath = "some//folder\\\\gpfile:,?!";
+        String[][] commands = {
+            {"asetup", "-f", invalidGpPath, "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d"},
+            {"dec", invalidGpPath, "user1", encFile.getPath(), resFile2.getPath(),
+            key1AFile.getPath()},
+            {"enc", invalidGpPath, resFile.getPath(), policy, encFile.getPath(),
+            apFileP.getPath()},
+            {"keygen", invalidGpPath, "user1", "a", apFileS.getPath(), key1AFile.getPath()}
+        };
+        int exitCode_expected = 2;
+
+        for (String[] command : commands) {
+            int exitCode = cmd.execute(command);
+
+            String msg = String.format("command \"%s\" output %d exitCode. Expected: %d.", command[0], exitCode, exitCode_expected);
+            assertEquals(msg, exitCode_expected, exitCode);
+        }
     }
 }
