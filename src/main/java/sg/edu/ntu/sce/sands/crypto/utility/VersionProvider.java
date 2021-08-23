@@ -12,10 +12,11 @@ public class VersionProvider implements IVersionProvider {
 
     @Override
     public String[] getVersion() {
-        InputStream is = DCPABETool.class.getResourceAsStream("/project.properties");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        String version = null;
-        try {
+        try (
+                InputStream is = DCPABETool.class.getResourceAsStream("/project.properties");
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        ) {
+            String version = null;
             while (reader.ready()) {
                 String line = reader.readLine();
                 if (line.startsWith("version")) {
@@ -23,10 +24,12 @@ public class VersionProvider implements IVersionProvider {
                     break;
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return new String[] {String.format("DCPABE version: %s", version)};
-    }
 
+            return new String[]{
+                    "DCPABE version: " + version
+            };
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to access version information");
+        }
+    }
 }

@@ -64,7 +64,7 @@ public class DCPABE {
             v.add(pairing.getZr().newRandomElement().getImmutable());
         }
 
-        List<Element> w = new ArrayList<Element>();
+        List<Element> w = new ArrayList<>();
         w.add(pairing.getZr().newZeroElement().getImmutable());
         for (int i = 1; i < arho.getL(); i++) {
             w.add(pairing.getZr().newRandomElement().getImmutable());
@@ -100,7 +100,7 @@ public class DCPABE {
     public static Message decrypt(Ciphertext CT, PersonalKeys pks, GlobalParameters GP) {
         List<Integer> toUse = CT.getAccessStructure().getIndexesList(pks.getAttributes());
 
-        if (null == toUse || toUse.isEmpty()) throw new IllegalArgumentException("not satisfying");
+        if (null == toUse || toUse.isEmpty()) throw new IllegalArgumentException("Not satisfying");
 
         Pairing pairing = PairingFactory.getPairing(GP.getPairingParameters());
 
