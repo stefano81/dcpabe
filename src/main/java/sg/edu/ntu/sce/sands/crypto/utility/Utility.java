@@ -1,6 +1,7 @@
 package sg.edu.ntu.sce.sands.crypto.utility;
 
 import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
@@ -16,15 +17,6 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.Map;
 
-/*******************************************************************
- * IBM Confidential                                                *
- *                                                                 *
- * Copyright IBM Corp. 2019                                        *
- *                                                                 *
- * The source code for this program is not published or otherwise  *
- * divested of its trade secrets, irrespective of what has         *
- * been deposited with the U.S. Copyright Office.                  *
- *******************************************************************/
 @SuppressWarnings("unchecked")
 public class Utility {
     public static GlobalParameters readGlobalParameters(String globalParametersPath) throws IOException, ClassNotFoundException {
@@ -37,7 +29,6 @@ public class Utility {
         try (
                 FileOutputStream fos = new FileOutputStream(publicKeysPath);
                 ObjectOutputStream outputPublicKey = new ObjectOutputStream(fos)) {
-            //oos.writeObject(ak.getAuthorityID());
             outputPublicKey.writeObject(publicKeys);
         }
 
@@ -47,7 +38,6 @@ public class Utility {
         try (
                 FileOutputStream fos = new FileOutputStream(secretKeyPath);
                 ObjectOutputStream outputSecretKey = new ObjectOutputStream(fos)) {
-            //oos.writeObject(ak.getAuthorityID());
             outputSecretKey.writeObject(secretKeys);
         }
 
@@ -108,6 +98,25 @@ public class Utility {
             }
 
             return  baos.toByteArray();
+        }
+    }
+
+    public static byte[] encryptAndDecrypt(byte[] key, boolean doEncrypt, InputStream message) {
+        PaddedBufferedBlockCipher aes = initializeAES(key, doEncrypt);
+        byte[] inBuff = new byte[aes.getBlockSize()];
+        byte[] outBuff = new byte[aes.getOutputSize(inBuff.length)];
+        int nbytes;
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            while (-1 != (nbytes = message.read(inBuff, 0, inBuff.length))) {
+                int length1 = aes.processBytes(inBuff, 0, nbytes, outBuff, 0);
+                outputStream.write(outBuff, 0, length1);
+            }
+            nbytes = aes.doFinal(outBuff, 0);
+            outputStream.write(outBuff, 0, nbytes);
+
+            return outputStream.toByteArray();
+        } catch (InvalidCipherTextException | IOException e) {
+            throw new RuntimeException("Error processing message");
         }
     }
 }
