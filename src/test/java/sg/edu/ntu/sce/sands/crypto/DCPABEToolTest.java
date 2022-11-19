@@ -43,7 +43,7 @@ public class DCPABEToolTest {
 
     @BeforeClass
     public static void beforeAll() throws Exception {
-        gpFile = File.createTempFile("dcpabe", "gp");
+        gpFile = Files.createTempFile("dcpabe", "gp").toFile();
         cmd = new CommandLine(new DCPABETool());
         cmd.execute("gsetup", "-f", gpFile.getPath());
         resFile = new File(DCPABEToolTest.class.getResource("/testResource.txt").toURI());
@@ -130,7 +130,7 @@ public class DCPABEToolTest {
 
     @Test
     public void testGSetupWorks() throws IOException {
-        File gpFile = File.createTempFile("testGlobalSetup", "gp");
+        File gpFile = Files.createTempFile("testGlobalSetup", "gp").toFile();
         gpFile.deleteOnExit();
 
         int exitCode = cmd.execute("gsetup", gpFile.getPath());
