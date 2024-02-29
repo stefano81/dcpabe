@@ -36,28 +36,26 @@ public class CiphertextTest {
     @Test
     public void testSerialization() throws Exception {
         Ciphertext ct = DCPABE.encrypt(DCPABE.generateRandomMessage(gp), arho, gp, pks);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);) {
+            oos.writeObject(ct);
 
-        oos.writeObject(ct);
+            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));) {
+                Ciphertext ct1 = (Ciphertext) ois.readObject();
 
-        oos.close();
+                assertArrayEquals(ct.getC0(), ct1.getC0());
 
-        ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
+                assertEquals(ct.getAccessStructure(), ct1.getAccessStructure());
 
-        Ciphertext ct1 = (Ciphertext) ois.readObject();
+                assertEquals(ct.getAccessStructure().getL(), ct1.getAccessStructure().getL());
+                assertEquals(ct.getAccessStructure().getN(), ct1.getAccessStructure().getN());
 
-        assertArrayEquals(ct.getC0(), ct1.getC0());
-
-        assertEquals(ct.getAccessStructure(), ct1.getAccessStructure());
-
-        assertEquals(ct.getAccessStructure().getL(), ct1.getAccessStructure().getL());
-        assertEquals(ct.getAccessStructure().getN(), ct1.getAccessStructure().getN());
-
-        for (int i = 0; i < ct.getAccessStructure().getL(); i++) {
-            assertArrayEquals(ct.getC1(i), ct1.getC1(i), "differ on C1" + i);
-            assertArrayEquals(ct.getC2(i), ct1.getC2(i), "differ on C2" + i);
-            assertArrayEquals(ct.getC3(i), ct1.getC3(i), "differ on C3" + i);
+                for (int i = 0; i < ct.getAccessStructure().getL(); i++) {
+                    assertArrayEquals(ct.getC1(i), ct1.getC1(i), "differ on C1" + i);
+                    assertArrayEquals(ct.getC2(i), ct1.getC2(i), "differ on C2" + i);
+                    assertArrayEquals(ct.getC3(i), ct1.getC3(i), "differ on C3" + i);
+                }
+            }
         }
     }
 }
