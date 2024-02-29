@@ -2,20 +2,23 @@ import it.unisa.dia.gas.jpbc.Element;
 import it.unisa.dia.gas.jpbc.Pairing;
 import it.unisa.dia.gas.plaf.jpbc.pairing.PairingFactory;
 import it.unisa.dia.gas.plaf.jpbc.pairing.a.TypeACurveGenerator;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.*;
+import org.junit.jupiter.api.Test;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKeys;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 
 import java.security.SecureRandom;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
-@RunWith(JUnit4.class)
 public class Testing {
     @Test
     public void testDCPABE2() {

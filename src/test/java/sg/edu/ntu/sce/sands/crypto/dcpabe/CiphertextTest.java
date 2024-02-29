@@ -1,8 +1,8 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 
 import java.io.ByteArrayInputStream;
@@ -10,8 +10,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 public class CiphertextTest {
     private static GlobalParameters gp;
@@ -19,13 +20,13 @@ public class CiphertextTest {
     private AccessStructure arho;
     private PublicKeys pks;
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         gp = DCPABE.globalSetup(160);
         authority = DCPABE.authoritySetup("authority", gp, "A", "B", "C", "D");
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         arho = AccessStructure.buildFromPolicy("and A or D and C B");
         pks = new PublicKeys();
@@ -46,17 +47,17 @@ public class CiphertextTest {
 
         Ciphertext ct1 = (Ciphertext) ois.readObject();
 
-        assertArrayEquals("C0", ct.getC0(), ct1.getC0());
+        assertArrayEquals(ct.getC0(), ct1.getC0());
 
-        assertEquals("access structure differ", ct.getAccessStructure(), ct1.getAccessStructure());
+        assertEquals(ct.getAccessStructure(), ct1.getAccessStructure());
 
-        assertEquals("differ on l", ct.getAccessStructure().getL(), ct1.getAccessStructure().getL());
-        assertEquals("differ on n", ct.getAccessStructure().getN(), ct1.getAccessStructure().getN());
+        assertEquals(ct.getAccessStructure().getL(), ct1.getAccessStructure().getL());
+        assertEquals(ct.getAccessStructure().getN(), ct1.getAccessStructure().getN());
 
         for (int i = 0; i < ct.getAccessStructure().getL(); i++) {
-            assertArrayEquals("differ on C1" + i, ct.getC1(i), ct1.getC1(i));
-            assertArrayEquals("differ on C2" + i, ct.getC2(i), ct1.getC2(i));
-            assertArrayEquals("differ on C3" + i, ct.getC3(i), ct1.getC3(i));
+            assertArrayEquals(ct.getC1(i), ct1.getC1(i), "differ on C1" + i);
+            assertArrayEquals(ct.getC2(i), ct1.getC2(i), "differ on C2" + i);
+            assertArrayEquals(ct.getC3(i), ct1.getC3(i), "differ on C3" + i);
         }
     }
 }

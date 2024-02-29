@@ -1,13 +1,14 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 public class GlobalParametersTest {
 
@@ -29,5 +30,4 @@ public class GlobalParametersTest {
 
         assertEquals(gp, gp1);
     }
-
 }
