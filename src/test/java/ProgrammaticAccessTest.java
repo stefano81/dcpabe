@@ -47,7 +47,7 @@ public class ProgrammaticAccessTest {
 
         byte[] fileBytes;
         try (
-                InputStream inputStream = getClass().getResourceAsStream("/test_decryption.txt");
+                InputStream inputStream = ProgrammaticAccessTest.class.getResourceAsStream("/test_decryption.txt");
         ) {
             fileBytes = IOUtils.toByteArray(inputStream);
         }
