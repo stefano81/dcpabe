@@ -147,11 +147,17 @@
             <groupId>com.github.stefano81</groupId>
             <artifactId>jpbc</artifactId>
             <version>v2.0.0-m</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>bcprov-jdk16</artifactId>
+                    <groupId>org.bouncycastle</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.9.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
