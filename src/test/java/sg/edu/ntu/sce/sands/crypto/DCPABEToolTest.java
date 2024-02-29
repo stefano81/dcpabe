@@ -247,27 +247,29 @@ public class DCPABEToolTest {
     @Test
     public void testCommandFailsWhenInputFileDoesNotExist() throws IOException {
         // BUG: CommandLine insists to print to System.err, but only when gpFile is missing
-        PrintStream SystemErr = System.err;
-        System.setErr(new PrintStream(fakeOutput));
-        File gpFile_ = folder.newFile();
-        gpFile_.delete();
-        String[][] commands = {
-            {"asetup", "-f", gpFile_.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d"},
-            {"dec", gpFile_.getPath(), "user1", encFile.getPath(), resFile2.getPath(),
-            key1AFile.getPath()},
-            {"enc", gpFile_.getPath(), resFile.getPath(), policy, encFile.getPath(),
-            apFileP.getPath()},
-            {"keygen", gpFile_.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath()}
-        };
-        int exitCode_expected = 2;
+        PrintStream systemErr = System.err;
+        try (PrintStream errorStream = new PrintStream(fakeOutput)) {
+            System.setErr(errorStream);
+            File gpFile_ = folder.newFile();
+            gpFile_.delete();
+            String[][] commands = {
+                {"asetup", "-f", gpFile_.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d"},
+                {"dec", gpFile_.getPath(), "user1", encFile.getPath(), resFile2.getPath(),
+                key1AFile.getPath()},
+                {"enc", gpFile_.getPath(), resFile.getPath(), policy, encFile.getPath(),
+                apFileP.getPath()},
+                {"keygen", gpFile_.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath()}
+            };
+            int exitCode_expected = 2;
 
-        for (String[] command : commands) {
-            int exitCode = cmd.execute(command);
+            for (String[] command : commands) {
+                int exitCode = cmd.execute(command);
 
-            String msg = String.format("command \"%s\" output %d exitCode. Expected: %d.", command[0], exitCode, exitCode_expected);
-            assertEquals(msg, exitCode_expected, exitCode);
+                String msg = String.format("command \"%s\" output %d exitCode. Expected: %d.", command[0], exitCode, exitCode_expected);
+                assertEquals(msg, exitCode_expected, exitCode);
+            }
         }
-        System.setErr(SystemErr);
+        System.setErr(systemErr);
     }
 
     @Test
