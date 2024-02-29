@@ -1,12 +1,9 @@
 package sg.edu.ntu.sce.sands.crypto;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -14,13 +11,16 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DCPABEToolTest {
     private static CommandLine cmd;
@@ -38,10 +38,7 @@ public class DCPABEToolTest {
 
     private static final String policy = "and a or d and b c";
 
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
-
-    @BeforeClass
+    @BeforeAll
     public static void beforeAll() throws Exception {
         gpFile = Files.createTempFile("dcpabe", "gp").toFile();
         cmd = new CommandLine(new DCPABETool());
@@ -49,22 +46,29 @@ public class DCPABEToolTest {
         resFile = new File(DCPABEToolTest.class.getResource("/testResource.txt").toURI());
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-        fakeOutput = folder.newFile();
+        fakeOutput = Files.createTempFile("fake", "output").toFile();
+        fakeOutput.deleteOnExit();
         fakeCmdOutput = new PrintWriter(fakeOutput);
         cmd.setErr(fakeCmdOutput);
         cmd.setOut(fakeCmdOutput);
 
-        apFileS = folder.newFile();
-        apFileP = folder.newFile();
-        encFile = folder.newFile();
-        resFile2 = folder.newFile();
-        key1AFile = folder.newFile();
-        key1DFile = folder.newFile();
+        apFileS = Files.createTempFile("fake", "apFileS").toFile();
+        apFileS.deleteOnExit();
+        apFileP = Files.createTempFile("fake", "apFileP").toFile();
+        apFileP.deleteOnExit();
+        encFile = Files.createTempFile("fake", "encFile").toFile();
+        encFile.deleteOnExit();
+        resFile2 = Files.createTempFile("fake", "resFile2").toFile();
+        resFile2.deleteOnExit();
+        key1AFile = Files.createTempFile("fake", "key1AFile").toFile();
+        key1AFile.deleteOnExit();
+        key1DFile = Files.createTempFile("fake", "key1DFile").toFile();
+        key1DFile.deleteOnExit();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         fakeCmdOutput.close();
     }
@@ -215,8 +219,7 @@ public class DCPABEToolTest {
     public void testKeyGenFailsWhenMissingArgs() {
         assertTrue(key1AFile.delete());
 
-        List<String> args = new ArrayList<>();
-        args.addAll(Arrays.asList("keygen", gpFile.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath()));
+        List<String> args = new ArrayList<>(Arrays.asList("keygen", gpFile.getPath(), "user1", "a", apFileS.getPath(), key1AFile.getPath()));
         for (int i = 1; i < args.size(); i++) {
             String missingArgs = args.remove(i);
             int exitCode = cmd.execute(args.toArray(new String[0]));
@@ -228,15 +231,13 @@ public class DCPABEToolTest {
     }
 
     @Test
-    public void testPrintsVersion() {
+    public void testPrintsVersion() throws IOException {
         String version_expected = "1.2.0";
 
         int exitCode = cmd.execute("--version");
         String version = null;
         try (Stream<String> output = Files.lines(fakeOutput.toPath())) {
             version = output.iterator().next();
-        } catch (IOException e) {
-            fail("failed to retrieve command output");
         }
 
         assertEquals(0, exitCode);
@@ -246,11 +247,11 @@ public class DCPABEToolTest {
 
     @Test
     public void testCommandFailsWhenInputFileDoesNotExist() throws IOException {
-        // BUG: CommandLine insists to print to System.err, but only when gpFile is missing
         PrintStream systemErr = System.err;
         try (PrintStream errorStream = new PrintStream(fakeOutput)) {
             System.setErr(errorStream);
-            File gpFile_ = folder.newFile();
+            File gpFile_ = Files.createTempFile("fake", "gpFile").toFile();
+            gpFile.deleteOnExit();
             gpFile_.delete();
             String[][] commands = {
                 {"asetup", "-f", gpFile_.getPath(), "authority1", apFileS.getPath(), apFileP.getPath(), "a", "b", "c", "d"},
@@ -266,7 +267,7 @@ public class DCPABEToolTest {
                 int exitCode = cmd.execute(command);
 
                 String msg = String.format("command \"%s\" output %d exitCode. Expected: %d.", command[0], exitCode, exitCode_expected);
-                assertEquals(msg, exitCode_expected, exitCode);
+                assertEquals(exitCode_expected, exitCode, msg);
             }
         }
         System.setErr(systemErr);
@@ -289,7 +290,7 @@ public class DCPABEToolTest {
             int exitCode = cmd.execute(command);
 
             String msg = String.format("command \"%s\" output %d exitCode. Expected: %d.", command[0], exitCode, exitCode_expected);
-            assertEquals(msg, exitCode_expected, exitCode);
+            assertEquals(exitCode_expected, exitCode, msg);
         }
     }
 }

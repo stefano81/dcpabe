@@ -1,19 +1,18 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe.ac;
 
-import org.junit.Before;
-import org.junit.Test;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure.MatrixElement;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AccessStructureTest {
     private AccessStructure arho;
     private String policy;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         policy = "and or D and C B A";
         arho = AccessStructure.buildFromPolicy(policy);

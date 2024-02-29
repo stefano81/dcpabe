@@ -1,20 +1,24 @@
 import org.apache.commons.io.IOUtils;
-import org.junit.Test;
-import sg.edu.ntu.sce.sands.crypto.dcpabe.*;
+import org.junit.jupiter.api.Test;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.AuthorityKeys;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.Ciphertext;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.DCPABE;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.GlobalParameters;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.Message;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.PersonalKeys;
+import sg.edu.ntu.sce.sands.crypto.dcpabe.PublicKeys;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.utility.Utility;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class ProgrammaticAccessTest {
     @Test
-    public void testKeyCorrectlyDecrypted() throws IOException {
+    public void testKeyCorrectlyDecrypted() {
         GlobalParameters GP = DCPABE.globalSetup(160);
         AccessStructure accessStructure = AccessStructure.buildFromPolicy("A");
 
