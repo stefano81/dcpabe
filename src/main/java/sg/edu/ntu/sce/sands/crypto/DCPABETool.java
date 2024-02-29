@@ -342,7 +342,7 @@ public class DCPABETool implements Runnable {
 
         @Override
         public void run() {
-            if (command.equals("")) {
+            if (command.isEmpty()) {
                 cmd.usage(System.out);
             } else if (!cmd.getSubcommands().containsKey(command)) {
                 System.out.println("Unknown command: " + command);
