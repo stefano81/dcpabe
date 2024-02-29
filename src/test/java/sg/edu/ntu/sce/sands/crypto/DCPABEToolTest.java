@@ -11,10 +11,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,7 +43,7 @@ public class DCPABEToolTest {
         gpFile = Files.createTempFile("dcpabe", "gp").toFile();
         cmd = new CommandLine(new DCPABETool());
         cmd.execute("gsetup", "-f", gpFile.getPath());
-        resFile = new File(DCPABEToolTest.class.getResource("/testResource.txt").toURI());
+        resFile = new File(Objects.requireNonNull(DCPABEToolTest.class.getResource("/testResource.txt")).toURI());
     }
 
     @BeforeEach

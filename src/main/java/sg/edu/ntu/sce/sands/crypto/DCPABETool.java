@@ -45,7 +45,6 @@ import java.util.Map;
 	},
 	footer = {"","Run COMMAND --help for more information on a command."})
 public class DCPABETool implements Runnable {
-
 	@Spec CommandSpec commandSpec;
 
 	@Option(names = {"--version", "-V"}, versionHelp = true, description = "print version information and exit")
