@@ -1,7 +1,7 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PersonalKey;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.key.PublicKey;
@@ -9,13 +9,11 @@ import sg.edu.ntu.sce.sands.crypto.dcpabe.key.SecretKey;
 
 import java.util.Collections;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class SerializationTest {
     private static final ObjectMapper mapper = new ObjectMapper();
-
 
     @Test
     public void serializeGlobalParameters() throws Exception {
@@ -28,7 +26,7 @@ public class SerializationTest {
         GlobalParameters deserialized = mapper.readValue(serializedValue, GlobalParameters.class);
 
         assertNotNull(deserialized);
-        assertThat(gp, equalTo(deserialized));
+        assertEquals(gp, deserialized);
     }
 
     @Test
@@ -42,7 +40,7 @@ public class SerializationTest {
         AuthorityKeys deserialized = mapper.readValue(serializedValue, AuthorityKeys.class);
 
         assertNotNull(deserialized);
-        assertThat(authorityKeys, equalTo(deserialized));
+        assertEquals(authorityKeys, deserialized);
     }
 
     @Test
@@ -56,7 +54,7 @@ public class SerializationTest {
         AccessStructure deserialized = mapper.readValue(serializedValue, AccessStructure.class);
 
         assertNotNull(deserialized);
-        assertThat(ac.toString(), equalTo(deserialized.toString()));
+        assertEquals(ac.toString(), deserialized.toString());
     }
 
     @Test
@@ -70,7 +68,7 @@ public class SerializationTest {
         Message deserialized = mapper.readValue(serializedValue, Message.class);
 
         assertNotNull(deserialized);
-        assertThat(message, equalTo(deserialized));
+        assertEquals(message, deserialized);
     }
 
     @Test
@@ -84,7 +82,7 @@ public class SerializationTest {
         PersonalKey deserialized = mapper.readValue(serializedValue, PersonalKey.class);
 
         assertNotNull(deserialized);
-        assertThat(personalKey, equalTo(deserialized));
+        assertEquals(personalKey, deserialized);
     }
 
     @Test
@@ -98,7 +96,7 @@ public class SerializationTest {
         PublicKey deserialized = mapper.readValue(serializedValue, PublicKey.class);
 
         assertNotNull(deserialized);
-        assertThat(publicKey, equalTo(deserialized));
+        assertEquals(publicKey, deserialized);
     }
 
     @Test
@@ -112,7 +110,7 @@ public class SerializationTest {
         SecretKey deserialized = mapper.readValue(serializedValue, SecretKey.class);
 
         assertNotNull(deserialized);
-        assertThat(secretKey, equalTo(deserialized));
+        assertEquals(secretKey, deserialized);
     }
 
     @Test
@@ -127,7 +125,7 @@ public class SerializationTest {
         PersonalKeys deserialized = mapper.readValue(serializedValue, PersonalKeys.class);
 
         assertNotNull(deserialized);
-        assertThat(personalKeys, equalTo(deserialized));
+        assertEquals(personalKeys, deserialized);
     }
 
     @Test
@@ -144,6 +142,6 @@ public class SerializationTest {
         PublicKeys deserialized = mapper.readValue(serializedValue, PublicKeys.class);
 
         assertNotNull(deserialized);
-        assertThat(publicKeys, equalTo(deserialized));
+        assertEquals(publicKeys, deserialized);
     }
 }

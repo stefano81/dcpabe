@@ -77,7 +77,6 @@ abstract class BasicCommand implements Runnable {
     }
 
     static abstract class ForcibleCommand extends BasicCommand {
-
         @Option(names = { "-f", "--force" }, description = "Enables overwriting. Disabled by default")
         void setForceOverwrite(boolean forceFlag) {
             this.overwriteEnabled = forceFlag;

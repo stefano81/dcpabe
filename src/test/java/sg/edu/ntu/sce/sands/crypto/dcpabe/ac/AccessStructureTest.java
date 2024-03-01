@@ -1,26 +1,19 @@
 package sg.edu.ntu.sce.sands.crypto.dcpabe.ac;
 
-import org.junit.Before;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import sg.edu.ntu.sce.sands.crypto.dcpabe.ac.AccessStructure.MatrixElement;
-
-import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 
-public class AccessStructureTest {
-    private AccessStructure arho;
-    private String policy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-    @Before
-    public void setUp() {
-        policy = "and or D and C B A";
-        arho = AccessStructure.buildFromPolicy(policy);
-    }
+public class AccessStructureTest {
+    private final String policy = "and or D and C B A";
 
     @Test
     public void testPolicyToStringConversion() throws Exception {
+        AccessStructure arho = AccessStructure.buildFromPolicy(policy);
+
         String recoveredPolicy = arho.toString();
         assertEquals(policy, recoveredPolicy);
     }
